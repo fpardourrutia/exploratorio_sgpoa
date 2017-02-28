@@ -12,6 +12,7 @@ library("plyr")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
+library("stringi")
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -441,6 +442,26 @@ Restringiéndonos a las actividades prioritarias abordadas en esta consultoría,
 observar que todas excdpto una utilizan varias unidades de medición distintas.
 
 ```{r}
+
+# Seleccionar actividades correspondientes a temas que nos interesan y hacer el mismo
+# diagrama.
+
+temas_prioritarios <- tb_temas %>%
+  arrange(id_tema) %>%
+  filter(id_tema %in% c(
+    5,
+    7,
+    8,
+    9,
+    10,
+    11,
+    15,
+    #16, 
+    #20,
+    22
+    #24
+  )) %>%
+  '$'('tema')
 
 Actividades_temas_prioritarios_unidades_comparables <- Actividades_unidades_comparables %>%
   filter(tema %in% temas_prioritarios)
