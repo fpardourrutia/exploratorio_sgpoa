@@ -224,7 +224,7 @@ Actividad_poa %>%
 ## Tabla Catalogo_proyectos_anp_tema
 ## Variables importantes: tema, ANP, año, número de proyectos
 
-# Grafica de cantidad de proyectos por objetivo por año
+# Grafica de cantidad de proyectos por objetivo por año X
 
 Proyectos_objetivo_anio <- Catalogo_proyectos_anp_tema %>%
   group_by(objetivo, anyo_proy) %>%
@@ -236,7 +236,7 @@ ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
   facet_wrap(~anyo_proy) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-# Gráfica de cantidad de proyectos por tema por año.
+# Gráfica de cantidad de proyectos por tema por año. X
 
 Proyectos_tema_anio <- Catalogo_proyectos_anp_tema %>%
   group_by(tema, anyo_proy, objetivo) %>%

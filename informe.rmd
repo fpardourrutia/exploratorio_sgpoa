@@ -1,30 +1,643 @@
 ---
 title: "Análisis exploratorio"
-author: "X"
+author: "Fernando Pardo Urrutia, Omar Miranda Aranda"
 date: "20/2/2017"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
+
+library("knitr")
+library("plyr")
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+Después de analizar el contenido de cada tabla, se concluyó que las que contienen
+información relevante para este proyecto son las siguientes:
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+* **tb_direcciones**: catálogo de ANP's y direcciones regionales (general = 1)
+* **tb_objetivo/tb_temas/tb_actividades**: tablas de actividades/temas/objetivos
+POA. Cada objetivo se compone de varios temas que, a su vez, se componen de varias
+actividades.
+* **tb_unidades**: catálogo de unidades que se *pueden* utilizar para cada una
+de las actividades POA.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+* **tb_proyectos**: tabla de proyectos implementados por ANP, año y el tema al
+que corresponden.
 
-```{r cars}
-summary(cars)
+* **tb_actividad_poa**: tabla de actividades POA programadas por una ANP en el
+marco de un proyecto, sus unidades y las metas programadas por trimestre.
+
+* **tb_act_trim**: tabla de actividades POA realizadas por una ANP, donde se
+comparan las metas con los resultados alcanzados para cada trimestre.
+
+```{r tablas, include = FALSE}
+
+tablas <- readRDS(file = "insumos/tablas.rds")
+
+### Después de un análisis, se concluyó que se trabajará con las siguientes
+### tablas y variables:
+
+# Catálogo de ANP's
+tb_direcciones <- tablas$tb_direcciones %>%
+  select(
+    id_dir,
+    direccion,
+    general
+  )
+    # No nos importan tanto los siguientes campos: Mercedes.
+    #general, #si la que captura POA es dirección general o no 
+    #complejo, #POA's que capturan más de una ANP
+    #activa # si está activa la ANP
+
+# Catálogo de objetivos
+tb_objetivo <- tablas$tb_objetivo
+
+# Catálogo de temas asociados a los objetivos
+tb_temas <- tablas$tb_temas
+
+# Catálogo de actividades asociadas a los temas
+tb_actividades <- tablas$tb_actividades %>%
+  select(
+    id_act,
+    actividad,
+    id_tema
+  )
+
+# Catálogo de unidades de medida posibles para cada actividad
+tb_unidades <- tablas$tb_unidades %>%
+  select(
+    id_uni,
+    unidad,
+    id_act,
+    dato_part,
+    poa_2016
+  )
+
+# Tabla de proyectos implementados por ANP, año y tema.
+tb_proyecto <- tablas$tb_proyecto %>%
+  select(
+    id_proy,
+    anyo_proy,
+    id_tema,
+    id_dir,
+    obj
+  )
+
+# Tabla de actividades planeadas en cada uno de los proyectos anteriores
+tb_actividad_poa <- tablas$tb_actividad_poa %>%
+  select(
+    id_act,
+    id_cat_act,
+    id_cat_unidad,
+    des,
+    tipo_meta,
+    prog_prim,
+    prog_seg,
+    prog_ter,
+    prog_cua,
+    nueva_act,
+    nueva_unidad,
+    id_proy
+  )
+
+# Tabla de seguimiento a las actividades en tb_actividad_poa
+tb_act_trim <- tablas$tb_act_trim %>%
+  select(
+    id_act_trim,
+    id_actividad,
+    act_1_realizado,
+    act_1_programadas,
+    act_1_alcanzadas,
+    act_1_resultados,
+    act_2_realizado,
+    act_2_programadas,
+    act_2_alcanzadas,
+    act_2_resultados,
+    act_3_realizado,
+    act_3_programadas,
+    act_3_alcanzadas,
+    act_3_resultados,
+    act_4_realizado,
+    act_4_programadas,
+    act_4_alcanzadas,
+    act_4_resultados
+  )
+
+## Joins previos al análisis exploratorio
+
+# Catálogo de objetivos, temas y actividades:
+
+Catalogo_general_actividades <- tb_objetivo %>%
+  right_join(tb_temas, by = "id_obj") %>%
+  right_join(tb_actividades, by = "id_tema")
+
+Catalogo_proyectos_anp_tema <- tb_proyecto %>%
+  left_join(
+    tb_temas, by = "id_tema"
+  ) %>%
+  left_join(
+    tb_objetivo, by = "id_obj"
+  ) %>%
+  left_join(
+    tb_direcciones, by = "id_dir"
+  ) %>%
+  select(
+    -id_tema,
+    -id_dir,
+    -id_obj
+  )
+
+Actividad_poa <- tb_actividad_poa %>%
+  left_join(Catalogo_general_actividades %>%
+              select(
+                id_act,
+                actividad,
+                # hay referencias circulares
+                tema_cat_actividades = tema,
+                objetivo_cat_actividades = objetivo
+              ), by = c("id_cat_act" = "id_act")) %>%
+  left_join(tb_unidades %>%
+              select(
+                id_uni,
+                unidad,
+                dato_part,
+                poa_2016
+              ), by = c("id_cat_unidad" = "id_uni")) %>%
+  left_join(Catalogo_proyectos_anp_tema %>%
+      rename(
+        tema_cat_proyectos = tema,
+        objetivo_cat_proyectos = objetivo
+      ), by = "id_proy") %>%
+  left_join(tb_act_trim, by = c("id_act" = "id_actividad")) %>%
+  transmute(
+    id = id_act,
+    descripcion = des,
+    acumulativa = ifelse(tipo_meta == 1, FALSE, TRUE),
+    # revisar qué número corresponde a acumulativa / no acumulativa
+    id_actividad = id_cat_act,
+    actividad,
+    unidad,
+    
+    realizada_1 = as.logical(act_1_realizado),
+    alcanzadas_1 = act_1_alcanzadas,
+    meta_1 = prog_prim,
+    #meta_1_aux = act_1_programadas,
+    
+    realizada_2 = as.logical(act_2_realizado),
+    alcanzadas_2 = act_2_alcanzadas,
+    meta_2 = prog_seg,
+    #meta_2_aux = act_2_programadas,
+    
+    realizada_3 = as.logical(act_3_realizado),
+    alcanzadas_3 = act_3_alcanzadas,
+    meta_3 = prog_ter,
+    #meta_3_aux = act_3_programadas,
+    
+    realizada_4 = as.logical(act_4_realizado),
+    alcanzadas_4 = act_4_alcanzadas,
+    meta_4 = prog_cua,
+    #meta_4_aux = act_4_programadas,
+    
+    id_proyecto = id_proy,
+    anio = anyo_proy,
+    tema = ifelse(!is.na(tema_cat_actividades), tema_cat_actividades, tema_cat_proyectos),
+    objetivo = ifelse(!is.na(objetivo_cat_actividades), objetivo_cat_actividades, objetivo_cat_proyectos),
+    direccion,
+    general
+  )
+
+# Revisando que no haya incongruencias entre temas y objetivos obtenidos con ifelse:
+
+unique(Actividad_poa$tema) # Hay NA's
+unique(Actividad_poa$objetivo) # Hay NA's
+
+# Perfecto: las actividades sin tema son las que no tienen objetivo
+
+Actividad_poa %>%
+  group_by(tema) %>%
+  tally() %>%
+  nrow() == Actividad_poa %>%
+  group_by(tema, objetivo) %>%
+  tally() %>%
+  nrow()
+# Perfecto: no hay actividades con temas iguales bajo distintos objetivos
 ```
 
-## Including Plots
+<!--
+1. Número de ANP's que ejecutan determinado objetivo / tema por año.
+2. Cuántos temas aborda cada ANP por año y objetivo (se liga naturalmente con la anterior)
+(por tema se que máximo 1).
+Después de explicar la equivalencia entre número de temas abordados por ANP y año, con
+número de proyectos ejecutados por ANP y año:
+3. Cuántos proyectos ejecuta cada ANP por año.
+-->
 
-You can also embed plots, for example:
+Primero que nada, comparamos la cantidad de ANP's en el POA que realizan por objetivo y año (2015, 2016). Escogimos cantidad de proyectos porque, al analizar
+los datos, nos dimos cuenta que las ANPs implementan máximo un proyecto por tema
+por año, lo que refleja los principales
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+<!--Coma cada ANP implementa máximo un proyecto por tema por año, el número de
+proyectos implementados para un determinado tema en un determinado año, es el
+número de ANP's que aborda dicho tema en un determinado año, no así para objetivos -->
+
+<!-- Cambiar las gráficas por número de ANP's en lugar de por número de proyectos,
+para que sea más entendible. Afectar de manera correspondiente las conclusiones.
+-->
+
+Como podemos observar, al analizar las alturas de las barras:
+
+* La cantidad de proyectos realizados es ligeramente mayor en el año 2015 que en
+el 2016.
+* La mayor cantidad de proyectos registrados en el POA, para ambos años, se refieren
+al objetivo de "Conservación y Manejo de la Biodiversidad", al que le siguen, en orden:
+"Comunicación, educación, cultura y participación social para la conservación" y
+"Economía de la conservación".
+* Es interesante notar que en los años estudiados los objetivos mantuvieron su
+misma posición, al ordenarlos por número de proyectos, lo que puede significar que
+no hubo cambio de prioridades de un año a otro.
+
+```{r, echo = FALSE}
+Proyectos_objetivo_anio <- Catalogo_proyectos_anp_tema %>%
+  group_by(objetivo, anyo_proy) %>%
+  tally()
+
+ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
+  fill = objetivo)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~anyo_proy) +
+  theme(axis.text.x = element_blank())
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Ahora, comparando la cantidad de proyectos por año, y desglosados por temas,
+podemos notar que:
+
+* En los años estudiados, los temas mantuvieron casi siempre su misma posición, al
+ordenarlos por número de proyectos, lo que puede significar que se mantuvieron las
+prioridades de un año a otro.
+
+En la gráfica se muestran los temas ordenados por cantidad de proyectos, en la
+tabla anexa se mostrarán desglosados por objetivos y ordenados por cantidad de proyectos (anm's)
+totales:
+
+Objetivo,temas,n_2015,n_2016,n_total
+
+* En la tabla se puede apreciar que los temas con más cantidad de proyectos por objetivo
+son los siguientes:....
+
+<!--
+Catalogo_proyectos_anp_tema %>%
+  group_by(tema, anyo_proy, direccion) %>%
+  tally()
+-->
+
+```{r, echo = FALSE}
+Proyectos_tema_anio <- Catalogo_proyectos_anp_tema %>%
+  group_by(tema, anyo_proy, objetivo) %>%
+  tally()
+
+ggplot(data = Proyectos_tema_anio, aes(x = reorder(tema, n), y = n, fill = objetivo)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~anyo_proy) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Prosiguiendo con el análisis, ahora resulta interesante preguntarse, en resumen,
+cuántos temas aborda por objetivo cada ANP, para los dos años de interés:
+
+```{r, echo = FALSE}
+Proyectos_anp_anio_objetivo <- Catalogo_proyectos_anp_tema %>%
+  group_by(anyo_proy, objetivo, direccion) %>%
+  summarise(
+    n = n()
+  ) %>%
+  ungroup() %>%
+  complete(anyo_proy, objetivo, direccion, fill = list(n = 0))
+
+  # filter(objetivo == "Atención a los efectos del Cambio Climático y disminución de emisiones de   GEI") %>%
+  # group_by(anyo_proy) %>%
+  #   tally()
+
+ggplot(data = Proyectos_anp_anio_objetivo, aes(x = objetivo, y = n,
+  colour = objetivo)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.15) +
+  facet_wrap(~anyo_proy) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# ggplot(data = Proyectos_anp_anio_objetivo, aes(x = n)) +
+#   geom_histogram() +
+#   facet_wrap(~ anyo_proy + objetivo)
+```
+
+Viendo la gráfica anterior, podemos observar lo siguiente:
+
+<!--Ver qué pasa si le quito que es el número de proyectos dado que se realizó
+determinado objetivo-->
+
+* La mediana de cantidad de proyectos (temas abordados) realizados por ANP,
+en el marco de cada objetivo, se mantiene constante de un año a otro, a excepción
+de "Cambio Climático y disminución de emisiones de GEI": en 2015 la mayoría de las
+ANP's hacían 1 proyecto de este tipo, y en el 2016 hicieron 0. Revisando los datos
+se vio que de 84 ANP's que realizaban un proyecto en el marco de dicho objetivo en
+el 2015, se pasó a 77 en el 2016.
+* También la dispersión de los datos se mantiene constante para ambos años,
+y para todos los objetivos.
+
+La pregunta natural a contestar ahora es la siguiente: ¿Cuántas proyectos (temas
+distintos) ejecutaron las ANP's por año?
+
+Al observar la siguiente gráfica, podemos ver que la mediana de proyectos ejecutados
+disminuyó del 2015 al 2016 tanto para ANP's como para direcciones regionales,
+no obstante, las direcciones generales tienden a ejecutar más proyectos, y por
+lo tanto, a abordar más temas que las ANPs.
+
+```{r echo = FALSE}
+# Histogramas y diagramas de caja de número de proyectos realizados por dirección
+# para cada año, dividiendo entre si son de ANP's o de direcciones regionales
+
+Proyectos_anp_anio <- Catalogo_proyectos_anp_tema %>%
+  group_by(direccion, anyo_proy) %>%
+  summarise(
+    n = n(),
+    direccion_general = first(general)
+  )
+
+ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n)) +
+  geom_boxplot() +
+  facet_wrap(~direccion_general)
+```
+
+Nos concentramos ahora en un análisis a nivel de actividades programadas y
+realizadas, es decir, a un análisis a nivel más fino
+
+A este nivel, el análisis involucrará principalmente la relación entre actividades
+y unidades de medida de las mismas, debido a que este punto es el esencial para
+lograr una estandarización de los datos capturados, y con ello, poder efectuar
+análisis que sinteticen información de todas las ANP's.
+
+Cabe destacar que se eliminaron las actividades y unidades no comparables entre
+sí, como por ejemplo, la unidad de "número de actividades realizadas" y 
+las actividades y unidades "Otra...".
+
+En la siguiente gráfica se puede observar que el 75% de las combinaciones actividad +
+unidad tiene menos de 30 datos, lo que impacta en su alcance para hacer análisis estandarizados utilizando datos de varias ANP's
+
+```{r echo = FALSE}
+
+# Actividades y unidades más realizadas en todo el POA: presentarla como una tabla
+Actividades_unidades <- Actividad_poa %>%
+  # Homologando actividades iguales con distintos id's
+  group_by(actividad) %>%
+    mutate(
+      id_actividad = first(id_actividad)
+    ) %>%
+  ungroup %>%
+  group_by(actividad, unidad) %>%
+    summarise(
+      # hay actividades iguales con distintos id's
+      id_actividad = first(id_actividad),
+      tema = first(tema),
+      n = n()
+    ) %>%
+  ungroup() %>%
+  filter(complete.cases(.)) %>%
+  select(
+    id_actividad,
+    actividad,
+    unidad,
+    tema,
+    n
+  ) %>%
+  arrange(tema, desc(n))
+
+Actividades_unidades_presentable <- Actividades_unidades %>%
+  select(
+    actividad,
+    unidad,
+    n
+  ) %>%
+  arrange(desc(n))
+
+Actividades_unidades_comparables <- Actividades_unidades %>%
+  filter(
+    !stri_detect_regex(unidad, "acciones|\\.\\.\\.", case_insensitive=TRUE) |
+    stri_detect_regex(unidad, "con|proyectos", case_insensitive=TRUE)
+  ) %>%
+  arrange(desc(n))
+
+ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
+  geom_boxplot()
+
+# Para complementar esta gráfica, graficar qué porcentaje de las actividades
+# realizadas pertenecen a actividades + unidades no comparables.
+```
+
+Restringiéndonos a las actividades prioritarias abordadas en esta consultoría, podemos
+observar que todas excdpto una utilizan varias unidades de medición distintas.
+
+```{r}
+
+Actividades_temas_prioritarios_unidades_comparables <- Actividades_unidades_comparables %>%
+  filter(tema %in% temas_prioritarios)
+
+Actividades_otros_temas_unidades_comparables <- Actividades_unidades_comparables %>%
+  filter(
+    id_actividad %in% c(93, 108, 63) | #infraestructura y señalética
+      stri_detect_regex(actividad,
+        "capacitación de productor|uso sustentable|visitante|uso público",
+        case_insensitive=TRUE) # aprovechamiento sustentable consuntivo y no consuntivo
+  )
+
+Actividades_prioritarias_unidades_comparables <- Actividades_temas_prioritarios_unidades_comparables %>%
+  union(Actividades_otros_temas_unidades_comparables) %>% #unión eliminando duplicados
+  arrange(tema, desc(n))
+
+Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_comparables %>%
+  group_by(actividad) %>%
+    summarise(
+      num_unidades = n()
+    ) %>%
+  ungroup()
+```
+
+De esta manera, resulta interesante saber el número máximo de registros comparables
+por actividad prioritaria, y el número de registros comparables quese tendrían si
+se tuvieran las unidades estandarizadas.
+
+Cada actividad tendría, en promedio, 60 registros más de registros comprables si
+existiera esta estandarización, algunas actividades alcanzando una diferencia
+de más de trescientos registros.
+
+```{r}
+Actividades_prioritarias_numero_registros_comparables <- Actividades_prioritarias_unidades_comparables %>%
+  group_by(actividad) %>%
+    summarise(
+      id_actividad = first(id_actividad),
+      max_registros_comparables = max(n),
+      total_registros = sum(n),
+      diferencia = total_registros - max_registros_comparables
+    ) %>%
+  ungroup() %>%
+  arrange(diferencia) %>%
+  mutate(
+    indice = 1:nrow(.)
+  ) %>%
+  gather(key = "llave", value = "valor", max_registros_comparables, total_registros, diferencia)
+
+ggplot(data = Actividades_prioritarias_numero_registros_comparables, aes(
+  x = indice, y = valor, group = llave, colour = llave)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = mean(Actividades_prioritarias_numero_registros_comparables %>%
+      filter(llave == "diferencia") %>%
+      '$'(valor)))
+```
+
+Posteriormente, nos concentramos en encontrar dentro de cada tema prioritario,
+cuáles eran las actividades prioritarias (y con qué unidades), que tienen mayor
+representabilidad entre ANP's, es decir, que se realizan en la mayor cantidad
+de ANP's posibles.
+
+La siguiente tabla resume este análisis, que a su vez apoya la elección de las
+actividades a cuantificar y georreferenciar en esta consultoría.
+
+```{r}
+# Tabla de unidades de actividades prioritarias utilizadas por el mayor número de ANP's.
+
+Actividades_prioritarias_unidades_anps <- Actividad_poa %>%
+  # Homologando actividades iguales con distintos id's
+  group_by(actividad) %>%
+    mutate(
+      id_actividad = first(id_actividad)
+    ) %>%
+  ungroup() %>%
+  group_by(actividad, unidad, direccion) %>%
+    summarise(
+      id_actividad = first(id_actividad),
+      tema = first(tema),
+      n = n()
+  ) %>%
+  ungroup() %>%
+  filter(complete.cases(.)) %>%
+  select(
+    id_actividad,
+    actividad,
+    unidad,
+    tema,
+    direccion,
+    n
+  ) %>%
+  # Quedándome con las unidades comparables
+  filter(
+    !stri_detect_regex(unidad, "acciones|\\.\\.\\.", case_insensitive=TRUE) |
+      stri_detect_regex(unidad, "con|proyectos", case_insensitive=TRUE)
+  ) %>%
+  # Quedándome con actividades prioritarias
+  filter(tema %in% temas_prioritarios |
+           id_actividad %in% c(93, 108, 63) | #infraestructura y señalética
+           stri_detect_regex(actividad,
+                             "capacitación de productor|uso sustentable|visitante|uso público",
+                             case_insensitive=TRUE) # aprovechamiento sustentable consuntivo y no consuntivo)
+  ) %>%
+  group_by(actividad, unidad) %>%
+    summarise(
+      id_actividad = first(id_actividad),
+      tema = first(tema),
+      num_anps = n()
+    ) %>%
+  ungroup() %>%
+  arrange(tema, actividad, desc(num_anps))
+
+Actividades_prioritarias_unidades_anps_presentable <- Actividades_prioritarias_unidades_anps %>%
+  ddply(~tema, function(x){
+    aux <- x %>%
+      arrange(desc(num_anps)) %>%
+      head(2)
+    #print(aux)
+    return(aux)
+  })
+
+```
+
+Ahora, agregando por ANP, seleccionamos actividades con metas comparables y
+graficamos, por trimestre, la meta agregada (en las unidades correspondientes)
+vs la cantidad de unidades alcanzadas.
+
+Cabe destacar que no utilizamos el campo de "acumulativo", porque nos dimos cuenta
+que su información no es muy confiable, al comparar con lo que sabemos de las
+juntas, para las 4 ANP's de interés.
+
+```{r}
+# Seleccionando actividades cuyas metas son comparables y graficándolas.
+# Las principales actividades + unidades comparables entre ANP's
+# las tenemos en la tabla "Actividades_prioritarias_unidades_anps_presentable"
+# el campo de acumulativo no es muy confiable, por lo que se omitió, al menos
+# en principio.
+
+
+# Tabla con los valores de actividad + unidad que nos interesan:
+actividades_unidades_interes <- Actividades_prioritarias_unidades_anps_presentable %>%
+  select(
+    actividad,
+    unidad
+  ) %>%
+  mutate(
+    id_actividad_unidad = 1:nrow(.)
+  )
+
+# Gráfica de metas realizadas y alcanzadas vs tiempo para las actividades + unidades
+# de interés, agregada por ANP.
+Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
+  filter(!is.na(anio)) %>%
+  inner_join(actividades_unidades_interes, by = c("actividad", "unidad")) %>%
+  select(
+    -realizada_1,
+    -realizada_2,
+    -realizada_3,
+    -realizada_4
+    ) %>%
+  gather(llave, valor, alcanzadas_1, meta_1, alcanzadas_2, meta_2, alcanzadas_3,
+    meta_3, alcanzadas_4, meta_4, na.rm = TRUE) %>%
+  separate(llave, c("tipo","trimestre")) %>%
+  transmute(
+    id_actividad_unidad = id_actividad_unidad,
+    actividad = actividad,
+    unidad = unidad,
+    trimestre = paste0(anio, "_", trimestre),
+    tipo = tipo,
+    valor = valor
+  ) %>%
+  group_by(id_actividad_unidad, actividad, unidad, trimestre, tipo) %>%
+    summarise(
+      n = sum(valor)
+    ) %>%
+  ungroup %>%
+  arrange(id_actividad_unidad, tipo, trimestre) %>%
+  # Calculando frecuencias acumulativas
+  group_by(id_actividad_unidad, tipo) %>%
+    mutate(
+      cum_n = cumsum(n)
+    ) %>%
+  ungroup()
+
+# graficando el número de unidades alcanzadas por actividad por trimestre.
+ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
+  aes(x = trimestre, y = n, group = tipo, colour = tipo)) +
+  geom_point() +
+  geom_line(alpha = 0.5) +
+  facet_wrap(~id_actividad_unidad, scales = "free") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# y acumulativo:
+ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
+  aes(x = trimestre, y = cum_n, group = tipo, colour = tipo)) +
+  geom_point() +
+  geom_line(alpha = 0.5) +
+  facet_wrap(~id_actividad_unidad, scales = "free") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
