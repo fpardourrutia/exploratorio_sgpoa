@@ -266,7 +266,9 @@ no hubo cambio de prioridades de un año a otro.
 Proyectos_objetivo_anio <- Catalogo_proyectos_anp_tema %>%
   group_by(objetivo, anyo_proy) %>%
   tally()
+```
 
+```{r, echo=FALSE, fig.width=10, fig.height=11}
 ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
   fill = objetivo)) +
   geom_bar(stat = "identity") +
@@ -300,7 +302,8 @@ Catalogo_proyectos_anp_tema %>%
 Proyectos_tema_anio <- Catalogo_proyectos_anp_tema %>%
   group_by(tema, anyo_proy, objetivo) %>%
   tally()
-
+```
+```{r, echo=FALSE, fig.width=10, fig.height=11}
 ggplot(data = Proyectos_tema_anio, aes(x = reorder(tema, n), y = n, fill = objetivo)) +
   geom_bar(stat = "identity") +
   facet_wrap(~anyo_proy) +
@@ -322,7 +325,8 @@ Proyectos_anp_anio_objetivo <- Catalogo_proyectos_anp_tema %>%
   # filter(objetivo == "Atención a los efectos del Cambio Climático y disminución de emisiones de   GEI") %>%
   # group_by(anyo_proy) %>%
   #   tally()
-
+```
+```{r, echo=FALSE, fig.height=11, fig.width=10}
 ggplot(data = Proyectos_anp_anio_objetivo, aes(x = objetivo, y = n,
   colour = objetivo)) +
   geom_boxplot() +
@@ -367,7 +371,8 @@ Proyectos_anp_anio <- Catalogo_proyectos_anp_tema %>%
     n = n(),
     direccion_general = first(general)
   )
-
+```
+```{r, echo=FALSE, fig.height=11, fig.width=10}
 ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n)) +
   geom_boxplot() +
   facet_wrap(~direccion_general)
@@ -430,7 +435,8 @@ Actividades_unidades_comparables <- Actividades_unidades %>%
     stri_detect_regex(unidad, "con|proyectos", case_insensitive=TRUE)
   ) %>%
   arrange(desc(n))
-
+```
+```{r, echo=FALSE, fig.height=11, fig.width=10}
 ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
   geom_boxplot()
 
@@ -509,7 +515,8 @@ Actividades_prioritarias_numero_registros_comparables <- Actividades_prioritaria
     indice = 1:nrow(.)
   ) %>%
   gather(key = "llave", value = "valor", max_registros_comparables, total_registros, diferencia)
-
+```
+```{r, echo=FALSE, fig.height=11, fig.width=10}
 ggplot(data = Actividades_prioritarias_numero_registros_comparables, aes(
   x = indice, y = valor, group = llave, colour = llave)) +
   geom_point() +
@@ -645,7 +652,8 @@ Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
       cum_n = cumsum(n)
     ) %>%
   ungroup()
-
+```
+```{r echo=FALSE, fig.height=11, fig.width=10}
 # graficando el número de unidades alcanzadas por actividad por trimestre.
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
   aes(x = trimestre, y = n, group = tipo, colour = tipo)) +
@@ -653,7 +661,8 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
   geom_line(alpha = 0.5) +
   facet_wrap(~id_actividad_unidad, scales = "free") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
+```
+```{r, echo=FALSE, fig.height=11, fig.width=10}
 # y acumulativo:
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
   aes(x = trimestre, y = cum_n, group = tipo, colour = tipo)) +
