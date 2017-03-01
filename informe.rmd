@@ -1,9 +1,8 @@
 ---
-title: "Análisis exploratorio"
+title: "Análisis exploratorio SGPOA"
 author: "Fernando Pardo Urrutia, Omar Miranda Aranda"
 date: "20/2/2017"
 output:
-  pdf_document: default
   html_document: default
 ---
 
@@ -275,7 +274,12 @@ ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
   fill = objetivo)) +
   geom_bar(stat = "identity") +
   facet_wrap(~anyo_proy) +
-  theme(axis.text.x = element_blank())
+  xlab("Objetivos") +
+  ylab("Número de proyectos") +
+  ggtitle("Número de proyectos por año y objetivo") +
+  theme(
+    axis.text.x = element_blank(),
+    plot.title = element_text(hjust = 0.5, face="bold"))
 ```
 
 Ahora, comparando la cantidad de proyectos por año y desglosados por temas,
@@ -305,11 +309,18 @@ Proyectos_tema_anio <- Catalogo_proyectos_anp_tema %>%
   group_by(tema, anyo_proy, objetivo) %>%
   tally()
 ```
-```{r, echo=FALSE, fig.width=10, fig.height=11}
+
+```{r, echo=FALSE, fig.width=12, fig.height=11}
 ggplot(data = Proyectos_tema_anio, aes(x = reorder(tema, n), y = n, fill = objetivo)) +
   geom_bar(stat = "identity") +
   facet_wrap(~anyo_proy) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  xlab("Temas") +
+  ylab("Número de proyectos") +
+  ggtitle("Número de proyectos por año y tema") +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
 ```
 
 Prosiguiendo con el análisis, ahora resulta interesante preguntarse, en resumen,
@@ -328,13 +339,21 @@ Proyectos_anp_anio_objetivo <- Catalogo_proyectos_anp_tema %>%
   # group_by(anyo_proy) %>%
   #   tally()
 ```
+
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
 ggplot(data = Proyectos_anp_anio_objetivo, aes(x = objetivo, y = n,
   colour = objetivo)) +
   geom_boxplot() +
   geom_jitter(alpha = 0.15) +
   facet_wrap(~anyo_proy) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  xlab("Objetivos") +
+  ylab("Número de temas") +
+  ggtitle("Número de temas abordados por objetivo por cada ANP") +
+  theme(
+    axis.text.x = element_blank(),
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
 
 # ggplot(data = Proyectos_anp_anio_objetivo, aes(x = n)) +
 #   geom_histogram() +
@@ -372,12 +391,26 @@ Proyectos_anp_anio <- Catalogo_proyectos_anp_tema %>%
   summarise(
     n = n(),
     direccion_general = first(general)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    etiquetas_direccion_general = ifelse(direccion_general == "0", "ANP", "Dirección regional")
   )
 ```
+
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
-ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n)) +
+ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n, colour = as.character(anyo_proy))) +
   geom_boxplot() +
-  facet_wrap(~direccion_general)
+  facet_wrap(~etiquetas_direccion_general) +
+  geom_jitter(aes(y = n), alpha = 0.3) +
+  xlab("Años") +
+  ylab("Número de proyectos realizados") +
+  scale_colour_discrete(name = "Año") +
+  ggtitle("Número de proyectos realizados por dirección y año") +
+  theme(
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
+
 ```
 
 Nos concentramos ahora en un análisis a nivel de actividades programadas y
@@ -437,19 +470,33 @@ Actividades_unidades_comparables <- Actividades_unidades %>%
     stri_detect_regex(unidad, "con|proyectos", case_insensitive=TRUE)
   ) %>%
   arrange(desc(n))
+
+#kable(Actividades_unidades_comparables)
 ```
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
 ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
-  geom_boxplot()
+  geom_boxplot(colour = "seagreen4") +
+  geom_jitter(aes(y = n), alpha = 0.3, colour = "seagreen4") +
+  ggtitle("Número de actividades registradas\n con la misma unidad de medida") +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
+  
 
 # Para complementar esta gráfica, graficar qué porcentaje de las actividades
 # realizadas pertenecen a actividades + unidades no comparables.
 ```
 
 Restringiéndonos a las actividades prioritarias abordadas en esta consultoría, podemos
-observar que todas excdpto una utilizan varias unidades de medición distintas.
+observar que todas excepto una utilizan varias unidades de medición distintas.
 
-```{r}
+```{r, echo = FALSE}
 
 # Seleccionar actividades correspondientes a temas que nos interesan y hacer el mismo
 # diagrama.
@@ -489,20 +536,29 @@ Actividades_prioritarias_unidades_comparables <- Actividades_temas_prioritarios_
 Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_comparables %>%
   group_by(actividad) %>%
     summarise(
+      tema = first(tema),
       num_unidades = n()
     ) %>%
-  ungroup()
+  ungroup() %>%
+  select(
+    tema,
+    actividad,
+    num_unidades
+  ) %>%
+  arrange(tema)
+
+kable(Actividades_prioritarias_num_unidades)
 ```
 
 De esta manera, resulta interesante saber el número máximo de registros comparables
-por actividad prioritaria, y el número de registros comparables quese tendrían si
+por actividad prioritaria, y el número de registros comparables que se tendrían si
 se tuvieran las unidades estandarizadas.
 
-Cada actividad tendría, en promedio, 60 registros más de registros comprables si
+Cada actividad tendría, en promedio, 60 registros más de registros comparables si
 existiera esta estandarización, algunas actividades alcanzando una diferencia
 de más de trescientos registros.
 
-```{r}
+```{r, echo = FALSE}
 Actividades_prioritarias_numero_registros_comparables <- Actividades_prioritarias_unidades_comparables %>%
   group_by(actividad) %>%
     summarise(
@@ -525,7 +581,24 @@ ggplot(data = Actividades_prioritarias_numero_registros_comparables, aes(
   geom_line() +
   geom_hline(yintercept = mean(Actividades_prioritarias_numero_registros_comparables %>%
       filter(llave == "diferencia") %>%
-      '$'(valor)))
+      '$'(valor))) +
+  xlab("Índice de actividad") +
+  ylab("Número de registros") +
+  scale_colour_discrete(name = "Leyenda:") +
+  ggtitle("Número de registros totales / \n comparables por actividad") +
+  theme(
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
+```
+
+```{r, echo = FALSE}
+# Índice de actividades para entender la gráfica anterior.
+kable(Actividades_prioritarias_numero_registros_comparables %>%
+    group_by(indice) %>%
+    summarise(
+      actividad = first(actividad)
+    )
+)
 ```
 
 Posteriormente, nos concentramos en encontrar dentro de cada tema prioritario,
@@ -536,7 +609,7 @@ de ANP's posibles.
 La siguiente tabla resume este análisis, que a su vez apoya la elección de las
 actividades a cuantificar y georreferenciar en esta consultoría.
 
-```{r}
+```{r, echo = FALSE}
 # Tabla de unidades de actividades prioritarias utilizadas por el mayor número de ANP's.
 
 Actividades_prioritarias_unidades_anps <- Actividad_poa %>%
@@ -583,6 +656,8 @@ Actividades_prioritarias_unidades_anps <- Actividad_poa %>%
   ungroup() %>%
   arrange(tema, actividad, desc(num_anps))
 
+# Obtuve las actividades prioritarias seleccionando de cada tema las 2 que fueron realizadas
+# por una mayor cantidad de ANP's.
 Actividades_prioritarias_unidades_anps_presentable <- Actividades_prioritarias_unidades_anps %>%
   ddply(~tema, function(x){
     aux <- x %>%
@@ -602,7 +677,7 @@ Cabe destacar que no utilizamos el campo de "acumulativo", porque nos dimos cuen
 que su información no es muy confiable, al comparar con lo que sabemos de las
 juntas, para las 4 ANP's de interés.
 
-```{r}
+```{r, echo = FALSE}
 # Seleccionando actividades cuyas metas son comparables y graficándolas.
 # Las principales actividades + unidades comparables entre ANP's
 # las tenemos en la tabla "Actividades_prioritarias_unidades_anps_presentable"
@@ -613,6 +688,7 @@ juntas, para las 4 ANP's de interés.
 # Tabla con los valores de actividad + unidad que nos interesan:
 actividades_unidades_interes <- Actividades_prioritarias_unidades_anps_presentable %>%
   select(
+    tema,
     actividad,
     unidad
   ) %>%
@@ -620,8 +696,12 @@ actividades_unidades_interes <- Actividades_prioritarias_unidades_anps_presentab
     id_actividad_unidad = 1:nrow(.)
   )
 
+kable(actividades_unidades_interes, caption = "Actividades + unidades realizadas por la mayor cantidad de ANP's")
+
 # Gráfica de metas realizadas y alcanzadas vs tiempo para las actividades + unidades
 # de interés, agregada por ANP.
+
+# tentativo: creo que se perdieron actividades porque no tenían bien registrado el año.
 Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
   filter(!is.na(anio)) %>%
   inner_join(actividades_unidades_interes, by = c("actividad", "unidad")) %>%
@@ -655,6 +735,7 @@ Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
     ) %>%
   ungroup()
 ```
+
 ```{r echo=FALSE, fig.height=11, fig.width=10}
 # graficando el número de unidades alcanzadas por actividad por trimestre.
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
@@ -664,6 +745,7 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
   facet_wrap(~id_actividad_unidad, scales = "free") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
 # y acumulativo:
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
