@@ -2,7 +2,9 @@
 title: "Análisis exploratorio"
 author: "Fernando Pardo Urrutia, Omar Miranda Aranda"
 date: "20/2/2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -256,7 +258,7 @@ Como podemos observar, al analizar las alturas de las barras:
 el 2016.
 * La mayor cantidad de proyectos registrados en el POA, para ambos años, se refieren
 al objetivo de "Conservación y Manejo de la Biodiversidad", al que le siguen, en orden:
-"Comunicación, educación, cultura y participación social para la conservación" y
+"Comunicación", "Educación", "Cultura y participación social para la conservación" y
 "Economía de la conservación".
 * Es interesante notar que en los años estudiados los objetivos mantuvieron su
 misma posición, al ordenarlos por número de proyectos, lo que puede significar que
@@ -276,15 +278,15 @@ ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
   theme(axis.text.x = element_blank())
 ```
 
-Ahora, comparando la cantidad de proyectos por año, y desglosados por temas,
+Ahora, comparando la cantidad de proyectos por año y desglosados por temas,
 podemos notar que:
 
 * En los años estudiados, los temas mantuvieron casi siempre su misma posición, al
-ordenarlos por número de proyectos, lo que puede significar que se mantuvieron las
+ordenarlos por número de proyectos; lo que puede significar que se mantuvieron las
 prioridades de un año a otro.
 
 En la gráfica se muestran los temas ordenados por cantidad de proyectos, en la
-tabla anexa se mostrarán desglosados por objetivos y ordenados por cantidad de proyectos (anm's)
+tabla anexa se muestran desglosados por objetivos y ordenados por cantidad de proyectos (anp's)
 totales:
 
 Objetivo,temas,n_2015,n_2016,n_total
