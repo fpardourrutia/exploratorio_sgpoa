@@ -403,7 +403,7 @@ Proyectos_anp_anio <- Catalogo_proyectos_anp_tema %>%
   )
 ```
 
-```{r, echo=FALSE, fig.height=11, fig.width=10}
+```{r, echo=FALSE}
 ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n, colour = as.character(anyo_proy))) +
   geom_boxplot() +
   facet_wrap(~etiquetas_direccion_general) +
@@ -479,7 +479,8 @@ Actividades_unidades_comparables <- Actividades_unidades %>%
 
 #kable(Actividades_unidades_comparables)
 ```
-```{r, echo=FALSE, fig.height=11, fig.width=10}
+
+```{r, echo=FALSE}
 ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
   geom_boxplot(colour = "seagreen4") +
   geom_jitter(aes(y = n), alpha = 0.3, colour = "seagreen4") +
