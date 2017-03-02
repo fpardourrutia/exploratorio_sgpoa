@@ -1,9 +1,11 @@
 ---
-title: "Análisis exploratorio SGPOA"
+title: Reporte técnico indicando el estado y utilidad de los datos históricos y las
+  metodologías estadísticas propuestas para el análisis de datos del POA.
 author: "Fernando Pardo Urrutia, Omar Miranda Aranda"
-date: "20/2/2017"
+date: "1 de Marzo, 2017"
 output:
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,10 +16,15 @@ library("dplyr")
 library("tidyr")
 library("ggplot2")
 library("stringi")
+library("kableExtra")
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
+Consultoría relativa al proyecto Facilitación del proceso de consulta del Proyecto Conservación de la Biodiversidad en el Eje Neovolcánico (COBEN) PN:13.2161.1.001.07.
 
+No Contr: 83244688
+
+# Resumen
 Después de analizar el contenido de cada tabla, se concluyó que las que contienen
 información relevante para este proyecto son las siguientes:
 
@@ -238,10 +245,9 @@ Después de explicar la equivalencia entre número de temas abordados por ANP y 
 número de proyectos ejecutados por ANP y año:
 3. Cuántos proyectos ejecuta cada ANP por año.
 -->
-
-Primero que nada, comparamos la cantidad de ANP's en el POA que realizan por objetivo y año (2015, 2016). Escogimos cantidad de proyectos porque, al analizar
-los datos, nos dimos cuenta que las ANPs implementan máximo un proyecto por tema
-por año, lo que refleja los principales
+## Cantidad de proyectos por ANP's en cada año 
+Empezamos comparando la cantidad proyectos que realizan las ANP's en el POA por objetivo y año (2015, 2016). Escogimos cantidad de proyectos porque, al analizar los datos, nos dimos cuenta que las ANPs implementan como máximo **un proyecto por tema por año**.
+<!-- lo que refleja los principales -->
 
 <!--Coma cada ANP implementa máximo un proyecto por tema por año, el número de
 proyectos implementados para un determinado tema en un determinado año, es el
@@ -253,15 +259,13 @@ para que sea más entendible. Afectar de manera correspondiente las conclusiones
 
 Como podemos observar, al analizar las alturas de las barras:
 
-* La cantidad de proyectos realizados es ligeramente mayor en el año 2015 que en
-el 2016.
-* La mayor cantidad de proyectos registrados en el POA, para ambos años, se refieren
-al objetivo de "Conservación y Manejo de la Biodiversidad", al que le siguen, en orden:
-"Comunicación", "Educación", "Cultura y participación social para la conservación" y
-"Economía de la conservación".
+* La cantidad de proyectos realizados es ligeramente mayor en el año 2015 que en el 2016.
+* La mayor cantidad de proyectos registrados en el POA, para ambos años, se refieren a **"Conservación y Manejo de la Biodiversidad"**, al que le siguen, en orden:
+**"Comunicación ,Educación, Cultura y participación social para la conservación"** y
+**"Economía de la conservación"**.
 * Es interesante notar que en los años estudiados los objetivos mantuvieron su
 misma posición, al ordenarlos por número de proyectos, lo que puede significar que
-no hubo cambio de prioridades de un año a otro.
+**no hubo cambio de prioridades** de un año a otro.
 
 ```{r, echo = FALSE}
 Proyectos_objetivo_anio <- Catalogo_proyectos_anp_tema %>%
@@ -276,20 +280,20 @@ ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
   facet_wrap(~anyo_proy) +
   xlab("Objetivos") +
   ylab("Número de proyectos") +
-  ggtitle("Número de proyectos por año y objetivo") +
+  ggtitle("Número de proyectos por objetivo por año") +
   theme(
     axis.text.x = element_blank(),
     plot.title = element_text(hjust = 0.5, face="bold"))
 ```
 
-Ahora, comparando la cantidad de proyectos por año y desglosados por temas,
+Ahora, **al comparar la cantidad de proyectos por año y desglosarlos por temas**,
 podemos notar que:
 
-* En los años estudiados, los temas mantuvieron casi siempre su misma posición, al
-ordenarlos por número de proyectos; lo que puede significar que se mantuvieron las
+* En los años estudiados, los temas mantuvieron casi siempre su misma posición al
+ordenarlos por número de proyectos, lo que puede significar que se mantuvieron las
 prioridades de un año a otro.
 
-En la gráfica se muestran los temas ordenados por cantidad de proyectos, en la
+En la gráfica se muestran los temas ordenados por cantidad de proyectos<!--, en la
 tabla anexa se muestran desglosados por objetivos y ordenados por cantidad de proyectos (anp's)
 totales:
 
@@ -297,6 +301,7 @@ Objetivo,temas,n_2015,n_2016,n_total
 
 * En la tabla se puede apreciar que los temas con más cantidad de proyectos por objetivo
 son los siguientes:....
+-->
 
 <!--
 Catalogo_proyectos_anp_tema %>%
@@ -378,9 +383,9 @@ La pregunta natural a contestar ahora es la siguiente: ¿Cuántas proyectos (tem
 distintos) ejecutaron las ANP's por año?
 
 Al observar la siguiente gráfica, podemos ver que la mediana de proyectos ejecutados
-disminuyó del 2015 al 2016 tanto para ANP's como para direcciones regionales,
-no obstante, las direcciones generales tienden a ejecutar más proyectos, y por
-lo tanto, a abordar más temas que las ANPs.
+disminuyó del 2015 al 2016 tanto para ANP's como para Direcciones Regionales,
+no obstante, **las direcciones generales tienden a ejecutar más proyectos y por
+lo tanto, a abordar más temas que las ANPs**.
 
 ```{r echo = FALSE}
 # Histogramas y diagramas de caja de número de proyectos realizados por dirección
@@ -406,27 +411,28 @@ ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n, colour
   xlab("Años") +
   ylab("Número de proyectos realizados") +
   scale_colour_discrete(name = "Año") +
-  ggtitle("Número de proyectos realizados por dirección y año") +
+  ggtitle("Número de proyectos realizados por  ANP's y Dirección Regional en cada año") +
   theme(
     plot.title = element_text(hjust = 0.5, face="bold")
     )
 
 ```
 
+## Relación entre actividades y unidades de medida
+
 Nos concentramos ahora en un análisis a nivel de actividades programadas y
 realizadas, es decir, a un análisis a nivel más fino
 
-A este nivel, el análisis involucrará principalmente la relación entre actividades
-y unidades de medida de las mismas, debido a que este punto es el esencial para
+A este nivel, **el análisis involucra principalmente la relación entre actividades
+y unidades de medida de las mismas**, debido a que este punto es esencial para
 lograr una estandarización de los datos capturados, y con ello, poder efectuar
-análisis que sinteticen información de todas las ANP's.
+el análisis que sintetice la información de todas las ANP's.
 
 Cabe destacar que se eliminaron las actividades y unidades no comparables entre
-sí, como por ejemplo, la unidad de "número de actividades realizadas" y 
-las actividades y unidades "Otra...".
+sí, como por ejemplo, la unidad de **"número de actividades realizadas"** y 
+las actividades y unidades **"Otra"**.
 
-En la siguiente gráfica se puede observar que el 75% de las combinaciones actividad +
-unidad tiene menos de 30 datos, lo que impacta en su alcance para hacer análisis estandarizados utilizando datos de varias ANP's
+En la siguiente gráfica se puede observar que el 75% de las combinaciones de **actividades con unidad de medida comparable tiene menos de 30 datos**, lo que impacta en su alcance para hacer análisis estandarizados, utilizando datos de varias ANP's
 
 ```{r echo = FALSE}
 
@@ -477,13 +483,13 @@ Actividades_unidades_comparables <- Actividades_unidades %>%
 ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
   geom_boxplot(colour = "seagreen4") +
   geom_jitter(aes(y = n), alpha = 0.3, colour = "seagreen4") +
-  ggtitle("Número de actividades registradas\n con la misma unidad de medida") +
+  ggtitle("Número de registros por actividad \n con la misma unidad de medida") +
   theme(
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
+    #axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
     plot.title = element_text(hjust = 0.5, face="bold")
     )
@@ -494,7 +500,7 @@ ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
 ```
 
 Restringiéndonos a las actividades prioritarias abordadas en esta consultoría, podemos
-observar que todas excepto una utilizan varias unidades de medición distintas.
+observar que todas utilizan varias unidades de medición distintas, excepto **Turismo y áreas protegidas**.
 
 ```{r, echo = FALSE}
 
@@ -547,12 +553,12 @@ Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_compa
   ) %>%
   arrange(tema)
 
-kable(Actividades_prioritarias_num_unidades)
+kable(Actividades_prioritarias_num_unidades, style = 'grid', split.table = Inf)
 ```
 
-De esta manera, resulta interesante saber el número máximo de registros comparables
+De esta manera, resulta interesante saber el **número máximo de registros comparables
 por actividad prioritaria, y el número de registros comparables que se tendrían si
-se tuvieran las unidades estandarizadas.
+se tuvieran las unidades estandarizadas**.
 
 Cada actividad tendría, en promedio, 60 registros más de registros comparables si
 existiera esta estandarización, algunas actividades alcanzando una diferencia
@@ -585,7 +591,7 @@ ggplot(data = Actividades_prioritarias_numero_registros_comparables, aes(
   xlab("Índice de actividad") +
   ylab("Número de registros") +
   scale_colour_discrete(name = "Leyenda:") +
-  ggtitle("Número de registros totales / \n comparables por actividad") +
+  ggtitle("Número de registros totales \n comparables por actividad") +
   theme(
     plot.title = element_text(hjust = 0.5, face="bold")
     )
@@ -593,21 +599,22 @@ ggplot(data = Actividades_prioritarias_numero_registros_comparables, aes(
 
 ```{r, echo = FALSE}
 # Índice de actividades para entender la gráfica anterior.
-kable(Actividades_prioritarias_numero_registros_comparables %>%
+Actividades_prioritarias_numero_registros_comparables_table <- Actividades_prioritarias_numero_registros_comparables %>%
     group_by(indice) %>%
     summarise(
       actividad = first(actividad)
     )
-)
+
+kable(Actividades_prioritarias_numero_registros_comparables_table, style = "grid", split.table = Inf)
+# pandoc.table(Actividades_prioritarias_numero_registros_comparables_table, split.cells = c("20%","80%"))
 ```
 
-Posteriormente, nos concentramos en encontrar dentro de cada tema prioritario,
-cuáles eran las actividades prioritarias (y con qué unidades), que tienen mayor
-representabilidad entre ANP's, es decir, que se realizan en la mayor cantidad
-de ANP's posibles.
+Posteriormente, nos concentramos en **encontrar dentro de cada tema prioritario, cuáles 
+actividades prioritarias y con qué unidades, tienen mayor representabilidad entre ANP's**, 
+es decir, que se realizan en la mayor cantidad de ANP's posibles.
 
-La siguiente tabla resume este análisis, que a su vez apoya la elección de las
-actividades a cuantificar y georreferenciar en esta consultoría.
+**La siguiente tabla resume este análisis, que a su vez apoya la elección de las
+actividades a cuantificar y georreferenciar en esta consultoría**.
 
 ```{r, echo = FALSE}
 # Tabla de unidades de actividades prioritarias utilizadas por el mayor número de ANP's.
@@ -669,13 +676,7 @@ Actividades_prioritarias_unidades_anps_presentable <- Actividades_prioritarias_u
 
 ```
 
-Ahora, agregando por ANP, seleccionamos actividades con metas comparables y
-graficamos, por trimestre, la meta agregada (en las unidades correspondientes)
-vs la cantidad de unidades alcanzadas.
 
-Cabe destacar que no utilizamos el campo de "acumulativo", porque nos dimos cuenta
-que su información no es muy confiable, al comparar con lo que sabemos de las
-juntas, para las 4 ANP's de interés.
 
 ```{r, echo = FALSE}
 # Seleccionando actividades cuyas metas son comparables y graficándolas.
@@ -696,7 +697,7 @@ actividades_unidades_interes <- Actividades_prioritarias_unidades_anps_presentab
     id_actividad_unidad = 1:nrow(.)
   )
 
-kable(actividades_unidades_interes, caption = "Actividades + unidades realizadas por la mayor cantidad de ANP's")
+kable(actividades_unidades_interes, style = "grid", caption = "Actividades + unidades realizadas por la mayor cantidad de ANP's", split.table = Inf)
 
 # Gráfica de metas realizadas y alcanzadas vs tiempo para las actividades + unidades
 # de interés, agregada por ANP.
@@ -736,6 +737,20 @@ Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
   ungroup()
 ```
 
+## Actividades con metas comparables
+
+Ahora bien, agregando por ANP's, seleccionamos actividades con metas comparables y
+**graficamos por trimestre la meta agregada (en las unidades correspondientes)
+VS la cantidad de unidades alcanzadas**.
+
+<!-- Cabe destacar que no utilizamos el campo de "acumulativo", porque nos dimos cuenta
+que su información no es muy confiable, al comparar con lo que sabemos de las
+juntas, para las 4 ANP's de interés. 
+#eoma: Esto ¿por que?
+-->
+
+### Por Trimestre
+
 ```{r echo=FALSE, fig.height=11, fig.width=10}
 # graficando el número de unidades alcanzadas por actividad por trimestre.
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
@@ -743,9 +758,18 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
   geom_point() +
   geom_line(alpha = 0.5) +
   facet_wrap(~id_actividad_unidad, scales = "free") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    #axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.title = element_text(hjust = 0.5, face="bold"))
 ```
 
+
+### Acumulado
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
 # y acumulativo:
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
@@ -753,5 +777,13 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
   geom_point() +
   geom_line(alpha = 0.5) +
   facet_wrap(~id_actividad_unidad, scales = "free") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank(),
+    #axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
 ```
