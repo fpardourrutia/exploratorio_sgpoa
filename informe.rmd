@@ -11,20 +11,27 @@ output:
 ```{r setup, include=FALSE}
 
 library("knitr")
+library("kableExtra")
+
 library("plyr")
 library("dplyr")
 library("tidyr")
 library("ggplot2")
 library("stringi")
-library("kableExtra")
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
 Consultoría relativa al proyecto Facilitación del proceso de consulta del Proyecto Conservación de la Biodiversidad en el Eje Neovolcánico (COBEN) PN:13.2161.1.001.07.
 
-No Contr: 83244688
+No. Contrato: 83244688
 
-# Resumen
+# Introducción
+
+Se realizará un Análisis Exploratorio de las tablas principales de la base de
+datos del SGPOA, debido a que la población objetivo de este análisis son justamente
+las actividades registradas en dicha base, por lo que se cuenta con información
+completa (no hay que hacer inferencia de ningún tipo).
+
 Después de analizar el contenido de cada tabla, se concluyó que las que contienen
 información relevante para este proyecto son las siguientes:
 
@@ -34,14 +41,11 @@ POA. Cada objetivo se compone de varios temas que, a su vez, se componen de vari
 actividades.
 * **tb_unidades**: catálogo de unidades que se *pueden* utilizar para cada una
 de las actividades POA.
-
 * **tb_proyectos**: tabla de proyectos implementados por ANP, año y el tema al
 que corresponden.
-
-* **tb_actividad_poa**: tabla de actividades POA programadas por una ANP en el
+* **tb_actividad_poa**: tabla de actividades POA *programadas* por una ANP en el
 marco de un proyecto, sus unidades y las metas programadas por trimestre.
-
-* **tb_act_trim**: tabla de actividades POA realizadas por una ANP, donde se
+* **tb_act_trim**: tabla de actividades POA *realizadas* por una ANP, donde se
 comparan las metas con los resultados alcanzados para cada trimestre.
 
 ```{r tablas, include = FALSE}
@@ -245,69 +249,102 @@ Después de explicar la equivalencia entre número de temas abordados por ANP y 
 número de proyectos ejecutados por ANP y año:
 3. Cuántos proyectos ejecuta cada ANP por año.
 -->
-## Cantidad de proyectos por ANP's en cada año 
-Empezamos comparando la cantidad proyectos que realizan las ANP's en el POA por objetivo y año (2015, 2016). Escogimos cantidad de proyectos porque, al analizar los datos, nos dimos cuenta que las ANPs implementan como máximo **un proyecto por tema por año**.
+
+El análisis exploratorio se dividió en 3 partes, que van de lo general a lo particular:
+
+1. análisis general a nivel de proyectos,
+2. análisis a general a nivel de actividades,
+3. análisis específico de las actividades prioritarias.
+
+# Análisis general a nivel de proyectos
+
+La primera parte de este análisis exploratorio tendrá como principal
+unidad de observación el proyecto, por lo que se enfocará en el estudio de
+distintas tendencias de cantidad de proyectos abordados por objetivo, tema,
+año y tipo de dirección (ANP o dirección regional).
+
+## Cantidad de ANP's y proyectos que abordan determinado objetivo en cada año.
+
+Empezamos con un análisis destinado a mostrar la importancia de cada objetivo
+por año, en términos del número de ANP's y proyectos que abordan cada uno de
+estos. La mejor manera de representar estos datos es utilizando una gráfica de
+barras, pues no hay dispersión alguna.
+
+```{r, echo = FALSE}
+Anps_proyectos_objetivo_anio <- Catalogo_proyectos_anp_tema %>%
+  group_by(objetivo, anyo_proy, direccion) %>%
+  tally() %>%
+  ungroup() %>%
+  group_by(objetivo, anyo_proy) %>%
+  summarise(
+    n = n(),
+    tipo = "ANPs"
+    ) %>%
+  union(
+    Catalogo_proyectos_anp_tema %>%
+      group_by(objetivo, anyo_proy) %>%
+      tally() %>%
+      mutate(
+        tipo = "Proyectos"
+        )
+    )
+```
+
+```{r, echo=FALSE, fig.width=10, fig.height=11}
+ggplot(data = Anps_proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
+  fill = objetivo)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ tipo + anyo_proy) +
+  xlab("Objetivos") +
+  ylab("Número de ANP's y Direcciones") +
+  ggtitle("Número de ANP's/ proyectos por objetivo por año") +
+  theme(
+    axis.text.x = element_blank(),
+    plot.title = element_text(hjust = 0.5, face="bold"))
+```
+
+Se puede observar que:
+
+* Los objetivos de **"Conservación y Manejo de la Biodiversidad"**,
+**"Comunicación ,Educación, Cultura y participación social para la conservación"**
+y **"Economía de la conservación"** son los más importantes, tanto por el número
+de ANP's que los implementan, como por el número de proyectos que tienen.
+* En términos generales, se redujeron la cantidad de ANP's y proyectos que abordan
+cada objetivo en el 2016 con respecto al 2015. La excepción es el objetivo **"Manejo
+integrado de paisaje"**.
+* Es interesante notar que en los años estudiados, la mayoría de los objetivos
+mantuvieron su misma posición, al ordenarlos por número de ANP's / proyectos que
+los implementan, lo que puede significar que **no hubo un cambio radical de prioridades**
+de un año a otro.
+* Al comparar el número de proyectos con el número de ANP's por objetivo, podemos
+ver que, a nivel de ANP, los objetivos de **"Conservación y Manejo de la Biodiversidad"**,
+**"Comunicación ,Educación, Cultura y participación social para la conservación"**
+y **"Economía de la conservación"** son los más importantes, puesto que las ANP's
+tienden a implementar varios proyectos de cada uno de estos objetivos.
+
 <!-- lo que refleja los principales -->
 
 <!--Coma cada ANP implementa máximo un proyecto por tema por año, el número de
 proyectos implementados para un determinado tema en un determinado año, es el
 número de ANP's que aborda dicho tema en un determinado año, no así para objetivos -->
 
-<!-- Cambiar las gráficas por número de ANP's en lugar de por número de proyectos,
-para que sea más entendible. Afectar de manera correspondiente las conclusiones.
--->
+## Cantidad de ANP's / proyectos que abordan determinado tema en cada año.
 
-Como podemos observar, al analizar las alturas de las barras:
-
-* La cantidad de proyectos realizados es ligeramente mayor en el año 2015 que en el 2016.
-* La mayor cantidad de proyectos registrados en el POA, para ambos años, se refieren a **"Conservación y Manejo de la Biodiversidad"**, al que le siguen, en orden:
-**"Comunicación ,Educación, Cultura y participación social para la conservación"** y
-**"Economía de la conservación"**.
-* Es interesante notar que en los años estudiados los objetivos mantuvieron su
-misma posición, al ordenarlos por número de proyectos, lo que puede significar que
-**no hubo cambio de prioridades** de un año a otro.
-
-```{r, echo = FALSE}
-Proyectos_objetivo_anio <- Catalogo_proyectos_anp_tema %>%
-  group_by(objetivo, anyo_proy) %>%
-  tally()
-```
-
-```{r, echo=FALSE, fig.width=10, fig.height=11}
-ggplot(data = Proyectos_objetivo_anio, aes(x = reorder(objetivo, n), y = n,
-  fill = objetivo)) +
-  geom_bar(stat = "identity") +
-  facet_wrap(~anyo_proy) +
-  xlab("Objetivos") +
-  ylab("Número de proyectos") +
-  ggtitle("Número de proyectos por objetivo por año") +
-  theme(
-    axis.text.x = element_blank(),
-    plot.title = element_text(hjust = 0.5, face="bold"))
-```
-
-Ahora, **al comparar la cantidad de proyectos por año y desglosarlos por temas**,
-podemos notar que:
-
-* En los años estudiados, los temas mantuvieron casi siempre su misma posición al
-ordenarlos por número de proyectos, lo que puede significar que se mantuvieron las
-prioridades de un año a otro.
-
-En la gráfica se muestran los temas ordenados por cantidad de proyectos<!--, en la
-tabla anexa se muestran desglosados por objetivos y ordenados por cantidad de proyectos (anp's)
-totales:
-
-Objetivo,temas,n_2015,n_2016,n_total
-
-* En la tabla se puede apreciar que los temas con más cantidad de proyectos por objetivo
-son los siguientes:....
--->
+Prosiguiendo con el análisis, decidimos dar un vistazo más detallado a la gráfica
+anterior, es decir, obtener el número de proyectos / ANP's que realizan determinado
+tema por año.
 
 <!--
 Catalogo_proyectos_anp_tema %>%
   group_by(tema, anyo_proy, direccion) %>%
   tally()
 -->
+
+Al revisar la base de datos, notamos que cada ANP realiza, a lo más, un proyecto
+por tema por año; entonces **el número de proyectos implementados por año para
+determinado tema es el número de ANP's que implementaron dicho tema en dicho año**,
+por lo tanto, las dos gráficas: **Cantidad de ANP's que implementan un tema por año**
+y **Cantidad de proyectos implementados por tema y año** son las mismas:
 
 ```{r, echo = FALSE}
 Proyectos_tema_anio <- Catalogo_proyectos_anp_tema %>%
@@ -321,15 +358,51 @@ ggplot(data = Proyectos_tema_anio, aes(x = reorder(tema, n), y = n, fill = objet
   facet_wrap(~anyo_proy) +
   xlab("Temas") +
   ylab("Número de proyectos") +
-  ggtitle("Número de proyectos por año y tema") +
+  ggtitle("Número de proyectos/ANP's por año y tema") +
   theme(
     axis.text.x = element_text(angle = 90, hjust = 1),
     plot.title = element_text(hjust = 0.5, face="bold")
     )
 ```
 
+Interpretaciones:
+
+* En los años estudiados, los temas mantuvieron casi siempre su misma posición al
+ordenarlos por número de proyectos, lo que puede significar que se mantuvieron las
+prioridades de un año a otro.
+* En general, se observa una reducción del número de proyectos implementados por
+tema del año 2016 con respecto al 2015.
+* En general, los objetivos con menor importancia (medida con respecto al número
+de ANP's y proyectos implementados), tienen un sólo tema, que en general sí es de
+interés para las ANP's (**"Atención a los efectos del Cambio Climático y disminución de emisiones de GEI"**, **"Fortalecimiento de la coordinación estratégica intrasectorial (Integralidad)"**, **"Fortalecimiento de la coordinación intersectorial (Transversalidad)"**)
+* Por el contrario, los objetivos con mayor importancia tienen varios temas
+que, además, son implementados por una gran cantidad de ANP's: notar la cantidad
+de temas y proyectos implementados para cada uno, dentro de los objetivos:
+**"Conservación y Manejo de la Biodiversidad"**,
+**"Comunicación ,Educación, Cultura y participación social para la conservación"**
+y **"Economía de la conservación"**.
+
+<!--En la tabla anexa se muestran los temas desglosados por objetivos y
+ordenados por cantidad de proyectos (ANP's) totales:
+
+Objetivo,temas,n_2015,n_2016,n_total
+
+* En la tabla se puede apreciar que los temas con más cantidad de proyectos por objetivo
+son los siguientes:....
+-->
+
+## Número de proyectos (temas) abordados por ANP y dirección regional para cada objetivo y año.
+
 Prosiguiendo con el análisis, ahora resulta interesante preguntarse, en resumen,
-cuántos temas aborda por objetivo cada ANP, para los dos años de interés:
+cuántos temas aborda por objetivo cada ANP y dirección regional, para los dos 
+años de interés. Esto lo lagramos utilizando diagramas de caja y brazos,
+puesto que necesitamos **resumir** de alguna manera los datos de cada ANP y
+dirección regional en particular.
+
+En estos diagramas por objetivos no se dividió entre ANP's y direcciones regionales
+puesto que para direcciones regionales, en general hay muy pocos datos, y es
+complejo interpretar varios diagramas de caja que fueron construidos sin mucha
+información.
 
 ```{r, echo = FALSE}
 Proyectos_anp_anio_objetivo <- Catalogo_proyectos_anp_tema %>%
@@ -354,7 +427,7 @@ ggplot(data = Proyectos_anp_anio_objetivo, aes(x = objetivo, y = n,
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   xlab("Objetivos") +
   ylab("Número de temas") +
-  ggtitle("Número de temas abordados por objetivo por cada ANP") +
+  ggtitle("Número de temas (proyectos) abordados por objetivo por cada ANP") +
   theme(
     axis.text.x = element_blank(),
     plot.title = element_text(hjust = 0.5, face="bold")
@@ -365,27 +438,25 @@ ggplot(data = Proyectos_anp_anio_objetivo, aes(x = objetivo, y = n,
 #   facet_wrap(~ anyo_proy + objetivo)
 ```
 
-Viendo la gráfica anterior, podemos observar lo siguiente:
+Como podemos observar, para ambos años, no se observan diferencias importantes
+en los cuartiles de las distribuciones de número de temas (proyectos) implementados
+por ANP para cada objetivo, por lo que la disminución general en el número de proyectos
+implementados del 2015 al 2016, posiblemente se debe a efectos pequeños agregados,
+es decir, a efectos poco perceptibles a nivel de objetivo, pero que pueden salir
+a la vista a nivel del total de proyectos por ANP.
 
-<!--Ver qué pasa si le quito que es el número de proyectos dado que se realizó
-determinado objetivo-->
+Por ejemplo: si cada ANP disminuyó la cantidad de proyectos implementados en 1,
+pero repartidos entre objetivos, el impacto se notaría mucho más al no segmentar
+los datos por objetivo. Éste será nuestro siguiente análisis.
 
-* La mediana de cantidad de proyectos (temas abordados) realizados por ANP,
-en el marco de cada objetivo, se mantiene constante de un año a otro, a excepción
-de "Cambio Climático y disminución de emisiones de GEI": en 2015 la mayoría de las
-ANP's hacían 1 proyecto de este tipo, y en el 2016 hicieron 0. Revisando los datos
-se vio que de 84 ANP's que realizaban un proyecto en el marco de dicho objetivo en
-el 2015, se pasó a 77 en el 2016.
-* También la dispersión de los datos se mantiene constante para ambos años,
-y para todos los objetivos.
+## Número de proyectos realizados por ANP / dirección regional para cada año
 
-La pregunta natural a contestar ahora es la siguiente: ¿Cuántas proyectos (temas
-distintos) ejecutaron las ANP's por año?
-
-Al observar la siguiente gráfica, podemos ver que la mediana de proyectos ejecutados
-disminuyó del 2015 al 2016 tanto para ANP's como para Direcciones Regionales,
-no obstante, **las direcciones generales tienden a ejecutar más proyectos y por
-lo tanto, a abordar más temas que las ANPs**.
+Ligando con la sección pasada, ahora se procede a graficar el número de
+proyectos totales realizados por ANP y dirección regional en cada año, utilizando
+un diagrama de caja y brazos. Esto ya no es problema con los proyectos agregados,
+puesto que se reducirá mucho la cantidad de diagramas de caja por interpretar.
+Además, la división entre ANP's y direcciones regionales permitirán capturar
+diferencias en las tendencias entre ambos tipos de dirección.
 
 ```{r echo = FALSE}
 # Histogramas y diagramas de caja de número de proyectos realizados por dirección
@@ -415,27 +486,68 @@ ggplot(data = Proyectos_anp_anio, aes(x = as.character(anyo_proy), y = n, colour
   theme(
     plot.title = element_text(hjust = 0.5, face="bold")
     )
-
 ```
 
-## Relación entre actividades y unidades de medida
+Al estudiar la siguiente gráfica, podemos observar que:
 
-Nos concentramos ahora en un análisis a nivel de actividades programadas y
-realizadas, es decir, a un análisis a nivel más fino
+* La mediana de proyectos ejecutados
+disminuyó del 2015 al 2016 tanto para ANP's como para Direcciones Regionales.
+* Las direcciones generales tienden a ejecutar más proyectos y por
+lo tanto, a abordar más temas que las ANPs.
 
-A este nivel, **el análisis involucra principalmente la relación entre actividades
+# Análisis general a nivel de actividades
+
+La segunda parte de este documento toma como unidades de observación
+las actividades programadas y realizadas en el marco de cada proyecto declarado
+en el SGPOA, por lo que corresponde a un análisis a un nivel más fino que el anterior.
+
+**Este análisis involucra principalmente la relación entre actividades
 y unidades de medida de las mismas**, debido a que este punto es esencial para
 lograr una estandarización de los datos capturados, y con ello, poder efectuar
 el análisis que sintetice la información de todas las ANP's.
 
-Cabe destacar que se eliminaron las actividades y unidades no comparables entre
-sí, como por ejemplo, la unidad de **"número de actividades realizadas"** y 
-las actividades y unidades **"Otra"**.
+Para estudiar el número de registros comparables dentro
+del SGPOA. **Partimos del supuesto que dos registros son comparables cuando forman parte de la misma actividad y tienen la misma unidad de medida.**
 
-En la siguiente gráfica se puede observar que el 75% de las combinaciones de **actividades con unidad de medida comparable tiene menos de 30 datos**, lo que impacta en su alcance para hacer análisis estandarizados, utilizando datos de varias ANP's
+Por ejemplo, registros con unidad de medida: **"Hectáreas registradas"**, pero
+correspondientes a distintas actividades, como pueden ser:
+**"Apoyar a la población local que así lo requiera en los trámites para la incorporación de predios al programa de servicios ambientales de la CONAFOR"** e
+**"Implementar instrumentos económicos y/o financieros"** no son inmediatamente
+comparables, revisar cuáles sí lo son requeriría de un esfuerzo y entendimiento
+de cada una de las actividades, que sale del marco de esta consultoría.
+
+De igual manera, registros correspondientes a la misma actividad, como puede ser
+**"Elaborar y ejecutar programas de inspección y vigilancia en las ANP y sus zonas de influencia, para detectar y/o prevenir ilícitos ambientales"**, pero tomados con
+unidades de medidas distintas, como pueden ser: **"Hectáreas supervisadas mediante actividades de vigilancia"** y **"Número de comités integrados"** tampoco son comparables entre
+ANP's para hacer análisis integrados.
+
+Para los alcances de esta consultoría, registros comparables serían, por ejemplo,
+los que corresponden a la actividad: **"Elaborar y ejecutar programas de inspección y vigilancia en las ANP y sus zonas de influencia, para detectar y/o prevenir ilícitos ambientales"**,
+con la unidad de medida **"Hectáreas supervisadas mediante actividades de vigilancia"**.
+Ya que sabemos que son hectáreas (por lo tanto comparables) entre sí, y con el mismo
+fin (por lo tanto, tiene sentido la comparación).
+
+La última aclaración es que registros con unidad de medida **"Número de acciones realizadas"**
+no se consideran comparables, ya que una acción puede tener significados distintos
+dependiendo del ANP, o incluso de la persona que implementó la actividad. Por
+ejemplo, una acción en un ANP puede ser plantar 100 árboles, y en
+otra, plantar 1 árbol. Tampoco actividades o unidades de medida **"Otras..."**,
+o que no se ligan automáticamente a un tema u objetivo se tomaron en cuenta.
+
+## Número de registros comparables por actividad y unidad de medida
+
+La primera idea que viene a la mente al estudiar las actividades programadas y
+realizadas en el marco de esta consultoría es evaluar la comparabilidad de los
+registros históricos.
+
+Ésto se puede pensar como la siguiente pregunta: ¿Qué cantidad de registros hay
+para cada actividad y unidad de medida?
+
+Como hay varias combinaciones de actividad con unidad de medida, conviene realizar
+un diagrama de caja y brazos con esta información, para lograr encontrar resúmenes
+de la tendencia y dispersión de los datos.
 
 ```{r echo = FALSE}
-
 # Actividades y unidades más realizadas en todo el POA: presentarla como una tabla
 Actividades_unidades <- Actividad_poa %>%
   # Homologando actividades iguales con distintos id's
@@ -449,6 +561,7 @@ Actividades_unidades <- Actividad_poa %>%
       # hay actividades iguales con distintos id's
       id_actividad = first(id_actividad),
       tema = first(tema),
+      objetivo = first(objetivo),
       n = n()
     ) %>%
   ungroup() %>%
@@ -458,6 +571,7 @@ Actividades_unidades <- Actividad_poa %>%
     actividad,
     unidad,
     tema,
+    objetivo,
     n
   ) %>%
   arrange(tema, desc(n))
@@ -482,8 +596,8 @@ Actividades_unidades_comparables <- Actividades_unidades %>%
 
 ```{r, echo=FALSE}
 ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
-  geom_boxplot(colour = "seagreen4") +
-  geom_jitter(aes(y = n), alpha = 0.3, colour = "seagreen4") +
+  geom_boxplot() +
+  geom_jitter(aes(y = n), alpha = 0.2) +
   ggtitle("Número de registros por actividad \n con la misma unidad de medida") +
   theme(
     axis.title.x = element_blank(),
@@ -494,14 +608,210 @@ ggplot(data = Actividades_unidades_comparables, aes(x = "1", y = n)) +
     axis.ticks.y = element_blank(),
     plot.title = element_text(hjust = 0.5, face="bold")
     )
-  
+
 
 # Para complementar esta gráfica, graficar qué porcentaje de las actividades
 # realizadas pertenecen a actividades + unidades no comparables.
 ```
 
-Restringiéndonos a las actividades prioritarias abordadas en esta consultoría, podemos
-observar que todas utilizan varias unidades de medición distintas, excepto **Turismo y áreas protegidas**.
+En la gráfica anterior se puede observar que el 75% de las combinaciones de
+**actividades con unidades de medida comparables, tiene menos de 30 datos**, lo
+que impacta en su alcance para hacer análisis estandarizados, utilizando datos
+de varias ANP's.
+
+## Gráfica de número mínimo de registros comparables contra porcentaje de registros en la base y combinaciones actividad + unidad que satisfacen ese requerimiento
+
+Un análisis complementario al anterior es revisar qué porcentaje de los registros
+en la base, y del total de combinaciones de actividad + unidad, sirven para realizar
+análisis que requieran de un **mínimo** registros comparables. Siendo este mínimo
+variable.
+
+```{r echo = FALSE}
+num_registros_totales <- sum(Actividades_unidades_comparables$n)
+num_actividades_unidades_totales <- nrow(Actividades_unidades_comparables)
+```
+
+Para cambiar de porcentaje a números absolutos, recordar que en la base hay:
+
+* `r num_registros_totales` registros de actividades programadas y realizadas.
+* `r num_actividades_unidades_totales` combinaciones de actividad +
+unidad de medida.
+
+Todo esto después de eliminar los registros y actividades + unidades que se
+consideraron "incomparables", como se explicó al inicio de esta sección.
+
+```{r echo = FALSE}
+Num_registros_comparables_utilidad_base <- Actividades_unidades_comparables %>%
+  arrange(n) %>%
+  ddply(.(n), function(x){
+    data_frame(
+      num_registros_comparables = x[1,"n"],
+      num_registros = sum(x$n),
+      num_actividades_unidades = nrow(x))
+  }) %>%
+  select(
+    num_registros_comparables,
+    num_registros,
+    num_actividades_unidades
+  ) %>%
+  mutate(
+    num_acum_registros = cumsum(num_registros),
+    porcentaje_registros = (num_registros_totales - num_acum_registros + num_registros ) /
+        num_registros_totales * 100,
+    num_acum_actividades_unidades = cumsum(num_actividades_unidades),
+    porcentaje_actividades_unidades = (num_actividades_unidades_totales -
+      num_acum_actividades_unidades + num_actividades_unidades) /
+      num_actividades_unidades_totales * 100
+  ) %>%
+  select(
+    num_registros_comparables,
+    porcentaje_registros,
+    porcentaje_actividades_unidades
+  ) %>%
+  gather(llave, valor, porcentaje_registros, porcentaje_actividades_unidades) %>%
+  mutate(
+    clave = ifelse(llave == "porcentaje_actividades_unidades",
+      "% actividades + unidades", "% registros")
+  )
+```
+
+```{r, echo=FALSE, fig.height=11, fig.width=10}
+
+# Función para recalcular el número de marcas en el eje X.
+number_ticks <- function(n){function(limits) pretty(limits, n)}
+
+ggplot(data = Num_registros_comparables_utilidad_base, aes(
+  x = num_registros_comparables, y = valor, colour = clave)) +
+  geom_point() +
+  geom_line() +
+  xlab("Número requerido de registros comparables") +
+  ylab("Porcentaje del total en la base") +
+  ggtitle("% de registros y actividades + unidades \nen la base que satisfacen un requerimiento mínimo de comparabilidad") +
+  theme(
+    plot.title = element_text(hjust = 0.5, face="bold")
+    ) +
+  scale_x_continuous(breaks=number_ticks(30)) +
+  scale_y_continuous(breaks=number_ticks(20))
+```
+
+La interpretación de esta gráfica se realiza como sigue:
+
+Si, por ejemplo, se requiere saber qué porcentaje de la base de datos se puede
+utilizar para efectuar un análisis que requiera de mínimo 30 registros comparables,
+la gráfica muestra que el 25% de las combinaciones actividad + unidad son las que
+aplican, y entre estas actividades + unidades utilizables, acumulan aproximandamente
+el 65% de los registros de actividades programadas en el SGPOA.
+
+Para hacer práctica la información de la gráfica anterior, es útil preguntarse si
+las actividades + unidades que tienen mayor cantidad de registros tienden a ser
+implementados por una mayor cantidad de áreas naturales protegidas y direcciones
+regional (la respuesta intuitiva esperada es sí).
+
+## Correlación entre número de registros de una actividad + unidad y número de ANP's / direcciones regionales que la implementan
+
+La siguiente gráfica de dispersión muestra la relación entre número de ANPs /
+direcciones regionales que implementan determinada actividad con cierta unidad,
+y el número de registros de la misma. Se eligió una gráfica de dispersión porque
+se quiere mostrar si hay algún tipo de correlación entre ambas variables.
+
+```{r, echo = FALSE}
+Actividades_unidades_direcciones <- Actividad_poa %>%
+  # Homologando actividades iguales con distintos id's
+  group_by(actividad) %>%
+    mutate(
+      id_actividad = first(id_actividad)
+    ) %>%
+  ungroup %>%
+  group_by(actividad, unidad, direccion, anio) %>%
+    summarise(
+      # hay actividades iguales con distintos id's
+      id_actividad = first(id_actividad),
+      n = n(),
+      tema = first(tema),
+      objetivo = first(objetivo)
+    ) %>%
+  ungroup() %>%
+  filter(complete.cases(.)) %>%
+  select(
+    objetivo,
+    tema,
+    id_actividad,
+    actividad,
+    unidad,
+    direccion,
+    anio,
+    n
+  ) %>%
+  filter(
+    !stri_detect_regex(unidad, "acciones|\\.\\.\\.", case_insensitive=TRUE) |
+    stri_detect_regex(unidad, "con|proyectos", case_insensitive=TRUE)
+  )
+
+# La comparación es cierta si en el group_by se utilizan
+#sum(Actividades_unidades_direcciones$n) == sum(Actividades_unidades_comparables$n)
+
+Actividades_unidades_num_direcciones_registros <- Actividades_unidades_direcciones %>%
+  group_by(actividad, unidad, anio) %>%
+  summarise(
+    num_direcciones = n(),
+    num_registros = sum(n)
+  )
+
+ggplot(Actividades_unidades_num_direcciones_registros, aes(
+  x = num_registros, y = num_direcciones, colour = as.factor(anio))) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, alpha = 0.2) +
+  facet_wrap(~anio) +
+  xlab("Número de registros") +
+  ylab("Número de direcciones") +
+  scale_colour_discrete(name = "Año") +
+  ggtitle("Número de registros de cierta actividad + unidad \n vs. el número de direcciones que la implementan") +
+  theme(
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
+```
+
+Se observa una correspondencia casi perfecta entre el número de direcciones y el
+número de registros que implementan cierta combinación de actividad + unidad por
+año.
+
+Inspeccionando los datos, se llegó a la conclusión de como cada dirección implementa
+a lo más un proyecto por tema por año, entonces, en el marco de ese proyecto, sólo
+se implementa una actividad con cierta unidad de medida por año.
+
+Es decir, **como la mayoría de las veces las ANP's implementan, a lo más, una combinación de actividad + unidad de medida por año, el número de registros de dicha actividad + unidad de medida en cierto año es el número de ANP's que la implementaron**.
+
+# Análisis específico a nivel de actividades prioritarias
+
+La parte final de este análisis exploratorio trata de las actividades que se
+consideraron prioritarias para los fines de esta consultoría, es decir, las
+actividades correspondientes a los temas:
+
+* Vigilancia
+* Protección contra incendios forestales
+* Sanidad forestal
+* Restauración de ecosistemas
+* Monitoreo biológico
+* Manejo y uso sustentable
+* Fomento a la investigación científica en ANP
+
+Además actividades relacionadas con los siguiente temas "no oficiales":
+
+* Infraestructura y señalética
+* Aprovechamiento sustentable consuntivo y no consuntivo
+
+El enfoque es de evaluación de estas actividades en cuanto a:
+
+* Unidades de medida
+* Cantidad de registros comparables.
+* Cantidad de ANP's y direcciones regionales que realizan cada actividad de
+manera comparable.
+* Ejemplos de análisis posibles con registros comparables de cada actividad.
+
+## Número de unidades de medida por actividad prioritaria.
+
+El primer resultado conforma la siguiente tabla, que indica el número de unidades
+distintas por actividad prioritaria.
 
 ```{r, echo = FALSE}
 
@@ -525,10 +835,10 @@ temas_prioritarios <- tb_temas %>%
   )) %>%
   '$'('tema')
 
-Actividades_temas_prioritarios_unidades_comparables <- Actividades_unidades_comparables %>%
+Actividades_temas_prioritarios_unidades_direcciones <- Actividades_unidades_direcciones %>%
   filter(tema %in% temas_prioritarios)
 
-Actividades_otros_temas_unidades_comparables <- Actividades_unidades_comparables %>%
+Actividades_otros_temas_unidades_direcciones <- Actividades_unidades_direcciones %>%
   filter(
     id_actividad %in% c(93, 108, 63) | #infraestructura y señalética
       stri_detect_regex(actividad,
@@ -536,16 +846,19 @@ Actividades_otros_temas_unidades_comparables <- Actividades_unidades_comparables
         case_insensitive=TRUE) # aprovechamiento sustentable consuntivo y no consuntivo
   )
 
-Actividades_prioritarias_unidades_comparables <- Actividades_temas_prioritarios_unidades_comparables %>%
-  union(Actividades_otros_temas_unidades_comparables) %>% #unión eliminando duplicados
+Actividades_prioritarias_unidades_direcciones <- Actividades_temas_prioritarios_unidades_direcciones %>%
+  union(Actividades_otros_temas_unidades_direcciones) %>% #unión eliminando duplicados
   arrange(tema, desc(n))
 
-Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_comparables %>%
+Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_direcciones %>%
   group_by(actividad) %>%
-    summarise(
-      tema = first(tema),
-      num_unidades = n()
-    ) %>%
+  do(
+    data_frame(
+      tema = unique(.$tema),
+      num_unidades = unique(.$unidad) %>%
+        length()
+      )
+  ) %>%
   ungroup() %>%
   select(
     tema,
@@ -557,58 +870,204 @@ Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_compa
 kable(Actividades_prioritarias_num_unidades, style = 'grid', split.table = Inf)
 ```
 
-De esta manera, resulta interesante saber el **número máximo de registros comparables
-por actividad prioritaria, y el número de registros comparables que se tendrían si
-se tuvieran las unidades estandarizadas**.
+En la tabla anterior, podemos observar que todas las actividades prioritarias
+utilizan unidades de medición distintas, excepto **Elaborar e implementar el programa de uso público (turístico)**.
 
-Cada actividad tendría, en promedio, 60 registros más de registros comparables si
-existiera esta estandarización, algunas actividades alcanzando una diferencia
-de más de trescientos registros.
+El siguiente análisis profundizará en el análisis de número de registros comparables
+y número de ANP's que realizan determinada actividad prioritaria de manera comparable.
+
+## Cantidad máxima de registros comparables por actividad prioritaria vs total de registros
+
+En este momento, resulta interesante mostrar un análisis que permite cuantificar
+la importancia de tener registros comparables para cada actividad prioritaria. Éste
+compara:
+
+* El número máximo de registros comparables por actividad.
+* El número de registros comparables que se tendrían si se tuvieran las unidades estandarizadas (total de registros por actividad).
 
 ```{r, echo = FALSE}
-Actividades_prioritarias_numero_registros_comparables <- Actividades_prioritarias_unidades_comparables %>%
-  group_by(actividad) %>%
-    summarise(
-      id_actividad = first(id_actividad),
-      max_registros_comparables = max(n),
-      total_registros = sum(n),
-      diferencia = total_registros - max_registros_comparables
-    ) %>%
-  ungroup() %>%
-  arrange(diferencia) %>%
+Actividades_prioritarias_num_registros <- Actividades_prioritarias_unidades_direcciones %>%
+  ddply(.(actividad), function(x){
+    data_frame(
+      id_actividad = first(x$id_actividad),
+      total_registros = sum(x$n),
+      max_registros_comparables = x %>%
+      group_by(unidad) %>%
+        summarise(
+          n = sum(n)
+        ) %>%
+      ungroup() %>%
+      '$'(.,n) %>%
+      max()
+    )
+  }) %>%
+  mutate(
+    diferencia_registros = total_registros - max_registros_comparables
+  ) %>%
+  arrange(diferencia_registros) %>%
   mutate(
     indice = 1:nrow(.)
   ) %>%
-  gather(key = "llave", value = "valor", max_registros_comparables, total_registros, diferencia)
+  gather(key = "llave", value = "valor",
+    total_registros,
+    max_registros_comparables,
+    diferencia_registros) %>%
+  mutate(
+    clave = ifelse(llave == "total_registros", "total de registros",
+      ifelse(llave == "max_registros_comparables", "máximo de registros comparables",
+       "diferencia"))
+  )
 ```
+
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
-ggplot(data = Actividades_prioritarias_numero_registros_comparables, aes(
-  x = indice, y = valor, group = llave, colour = llave)) +
+ggplot(data = Actividades_prioritarias_num_registros, aes(
+  x = indice, y = valor, group = clave, colour = clave)) +
   geom_point() +
   geom_line() +
-  geom_hline(yintercept = mean(Actividades_prioritarias_numero_registros_comparables %>%
-      filter(llave == "diferencia") %>%
+  geom_hline(yintercept = mean(Actividades_prioritarias_num_registros %>%
+      filter(llave == "diferencia_registros") %>%
       '$'(valor))) +
-  xlab("Índice de actividad") +
+  xlab("Índice de actividad (especial para esta gráfica)") +
   ylab("Número de registros") +
   scale_colour_discrete(name = "Leyenda:") +
-  ggtitle("Número de registros totales \n comparables por actividad") +
+  scale_x_continuous(breaks=number_ticks(25)) +
+  scale_y_continuous(breaks=number_ticks(20)) +
+  ggtitle("Número de registros por actividad") +
   theme(
     plot.title = element_text(hjust = 0.5, face="bold")
     )
 ```
 
+En la gráfica anterior se puede observar que:
+
+* En promedio (recta horizontal), si las unidades fueran estandarizadas, se
+tendrían casi 60 registros comparables más por actividad.
+* Sin embargo, dependiendo de la actividad, esta cantidad va de 0 (**Elaborar e implementar el programa de uso público (turístico)**) a 317 (
+**Elaborar y ejecutar programas de inspección y vigilancia en las ANP y sus zonas de influencia, para detectar y/o prevenir ilícitos ambientales**).
+
+A continuación se muestra el índice de actividades (este índice es aplicable
+sólo a la gráfica anterior, puesto que ordena por "diferencia"):
+
 ```{r, echo = FALSE}
 # Índice de actividades para entender la gráfica anterior.
-Actividades_prioritarias_numero_registros_comparables_table <- Actividades_prioritarias_numero_registros_comparables %>%
-    group_by(indice) %>%
+Actividades_prioritarias_numero_registros_table <- Actividades_prioritarias_num_registros %>%
+  group_by(indice) %>%
     summarise(
       actividad = first(actividad)
-    )
+    ) %>%
+  rename(
+    Indice = indice,
+    Actividad = actividad
+  )
 
-kable(Actividades_prioritarias_numero_registros_comparables_table, style = "grid", split.table = Inf)
+kable(Actividades_prioritarias_numero_registros_table, style = "grid", split.table = Inf)
 # pandoc.table(Actividades_prioritarias_numero_registros_comparables_table, split.cells = c("20%","80%"))
 ```
+
+## Cantidad máxima vs ideal de ANP's y direcciones regionales que realizan una actividad prioritaria de manera estandarizada
+
+El siguiente análisis es análogo al anterior, pero cuantificando para cada actividad prioritaria:
+
+* El número máximo de ANPs y direcciones regionales que realizan cada actividad
+ de manera comparable.
+* El número de ANPs y direcciones regionales que realizan cada actividad (y por lo tanto,
+que podrían entrar en un análisis conjunto si se midiera ésta de manera estandarizada).
+
+```{r, echo = FALSE}
+Actividades_prioritarias_num_anps <- Actividades_prioritarias_unidades_direcciones %>%
+  ddply(.(actividad), function(x){
+    data_frame(
+      id_actividad = first(x$id_actividad),
+      total_anps = x %>%
+        group_by(direccion) %>%
+          summarise(
+            n = n()
+          ) %>%
+        ungroup() %>%
+        nrow(),
+      max_anps_comparables = x %>%
+        group_by(unidad, direccion) %>%
+          summarise(
+            n = n()
+          ) %>%
+        ungroup() %>%
+        group_by(unidad) %>%
+          summarise(
+            num_anps = n()
+          ) %>%
+        '$'(.,num_anps) %>%
+        as.numeric() %>%
+        max()
+    )
+  }) %>%
+  mutate(
+    diferencia_anps = total_anps - max_anps_comparables
+  ) %>%
+  arrange(diferencia_anps) %>%
+  mutate(
+    indice = 1:nrow(.)
+  ) %>%
+  gather(key = "llave", value = "valor",
+    total_anps,
+    max_anps_comparables,
+    diferencia_anps) %>%
+  mutate(
+    clave = ifelse(llave == "total_anps", "total de ANP's y direcciones",
+      ifelse(llave == "max_anps_comparables", "máximo de ANPs y direcciones comparables",
+        "diferencia"))
+  )
+```
+
+
+```{r, echo=FALSE, fig.height=11, fig.width=10}
+ggplot(data = Actividades_prioritarias_num_anps, aes(
+  x = indice, y = valor, group = clave, colour = clave)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = mean(Actividades_prioritarias_num_anps %>%
+      filter(llave == "diferencia_anps") %>%
+      '$'(valor))) +
+  xlab("Índice de actividad (especial para esta gráfica)") +
+  ylab("Número de ANPS y direcciones") +
+  scale_colour_discrete(name = "Leyenda:") +
+  scale_x_continuous(breaks=number_ticks(25)) +
+  scale_y_continuous(breaks=number_ticks(20)) +
+  ggtitle("Número de ANPs y direcciones totales \n vs comparables por actividad") +
+  theme(
+    plot.title = element_text(hjust = 0.5, face="bold")
+    )
+```
+
+En la gráfica anterior se puede observar que:
+
+* En promedio (recta horizontal), si las unidades fueran estandarizadas,
+se podrían comparar más de 13 ANPs y direcciones regionales adicionales por actividad.
+* Sin embargo, dependiendo de la actividad, esta cantidad va de 0 (
+**Elaborar e implementar el programa de uso público (turístico)**) a 48 (
+**Acciones de restauración realizadas con apoyo de programas de subsidio, instituciones académicas, privadas y OSC (construcción de diques, colecta de germoplasma, producción de plantas, reforestaciones, etc.)**)
+
+A continuación se muestra el índice de actividades (este índice es aplicable
+sólo a la gráfica anterior, puesto que ordena por "diferencia"):
+
+```{r, echo = FALSE}
+# Índice de actividades para entender la gráfica anterior.
+Actividades_prioritarias_numero_anps_table <- Actividades_prioritarias_num_anps %>%
+  group_by(indice) %>%
+    summarise(
+      actividad = first(actividad)
+    ) %>%
+  rename(
+    Indice = indice,
+    Actividad = actividad
+  )
+
+kable(Actividades_prioritarias_numero_anps_table, style = "grid", split.table = Inf)
+# pandoc.table(Actividades_prioritarias_numero_registros_comparables_table, split.cells = c("20%","80%"))
+```
+
+## Ejemplos de análisis posibles con registros comparables de cada actividad
+
+Finalmente, y a manera de conclusión, 
 
 Posteriormente, nos concentramos en **encontrar dentro de cada tema prioritario, cuáles 
 actividades prioritarias y con qué unidades, tienen mayor representabilidad entre ANP's**, 
@@ -769,8 +1228,8 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
     plot.title = element_text(hjust = 0.5, face="bold"))
 ```
 
-
 ### Acumulado
+
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
 # y acumulativo:
 ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
