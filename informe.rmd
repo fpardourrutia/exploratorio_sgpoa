@@ -19,6 +19,9 @@ library("tidyr")
 library("ggplot2")
 library("stringi")
 
+# paquete auxiliar de ggplot
+library("scales")
+
 knitr::opts_chunk$set(echo = TRUE)
 ```
 Consultoría relativa al proyecto Facilitación del proceso de consulta del Proyecto Conservación de la Biodiversidad en el Eje Neovolcánico (COBEN) PN:13.2161.1.001.07.
@@ -867,7 +870,7 @@ Actividades_prioritarias_num_unidades <- Actividades_prioritarias_unidades_direc
   ) %>%
   arrange(tema)
 
-kable(Actividades_prioritarias_num_unidades, style = 'grid', split.table = Inf)
+kable(Actividades_prioritarias_num_unidades)
 ```
 
 En la tabla anterior, podemos observar que todas las actividades prioritarias
@@ -960,7 +963,7 @@ Actividades_prioritarias_numero_registros_table <- Actividades_prioritarias_num_
     Actividad = actividad
   )
 
-kable(Actividades_prioritarias_numero_registros_table, style = "grid", split.table = Inf)
+kable(Actividades_prioritarias_numero_registros_table)
 # pandoc.table(Actividades_prioritarias_numero_registros_comparables_table, split.cells = c("20%","80%"))
 ```
 
@@ -1046,7 +1049,7 @@ se podrían comparar más de 13 ANPs y direcciones regionales adicionales por ac
 **Elaborar e implementar el programa de uso público (turístico)**) a 48 (
 **Acciones de restauración realizadas con apoyo de programas de subsidio, instituciones académicas, privadas y OSC (construcción de diques, colecta de germoplasma, producción de plantas, reforestaciones, etc.)**)
 
-A continuación se muestra el índice de actividades (este índice es aplicable
+La siguiente tabla muestra el índice de actividades (este índice es aplicable
 sólo a la gráfica anterior, puesto que ordena por "diferencia"):
 
 ```{r, echo = FALSE}
@@ -1061,111 +1064,95 @@ Actividades_prioritarias_numero_anps_table <- Actividades_prioritarias_num_anps 
     Actividad = actividad
   )
 
-kable(Actividades_prioritarias_numero_anps_table, style = "grid", split.table = Inf)
+kable(Actividades_prioritarias_numero_anps_table)
 # pandoc.table(Actividades_prioritarias_numero_registros_comparables_table, split.cells = c("20%","80%"))
 ```
 
-## Ejemplos de análisis posibles con registros comparables de cada actividad
-
-Finalmente, y a manera de conclusión, 
-
-Posteriormente, nos concentramos en **encontrar dentro de cada tema prioritario, cuáles 
-actividades prioritarias y con qué unidades, tienen mayor representabilidad entre ANP's**, 
-es decir, que se realizan en la mayor cantidad de ANP's posibles.
-
-**La siguiente tabla resume este análisis, que a su vez apoya la elección de las
-actividades a cuantificar y georreferenciar en esta consultoría**.
+A continuación se muestran, para cada tema prioritario, las dos combinaciones de
+actividad + unidad de medida que tienen más representatividad entre ANPs y
+direcciones regionales:
 
 ```{r, echo = FALSE}
-# Tabla de unidades de actividades prioritarias utilizadas por el mayor número de ANP's.
+# Tabla de unidades de actividades prioritarias utilizadas por el mayor número de ANP's,
+# Se elegirán para cada tema las dos combinaciones de actividad + unidad más usadas
+# en ANPs.
 
-Actividades_prioritarias_unidades_anps <- Actividad_poa %>%
-  # Homologando actividades iguales con distintos id's
-  group_by(actividad) %>%
-    mutate(
-      id_actividad = first(id_actividad)
-    ) %>%
-  ungroup() %>%
+Actividades_unidades_mas_representativas <- Actividades_prioritarias_unidades_direcciones %>%
   group_by(actividad, unidad, direccion) %>%
     summarise(
       id_actividad = first(id_actividad),
       tema = first(tema),
       n = n()
-  ) %>%
-  ungroup() %>%
-  filter(complete.cases(.)) %>%
-  select(
-    id_actividad,
-    actividad,
-    unidad,
-    tema,
-    direccion,
-    n
-  ) %>%
-  # Quedándome con las unidades comparables
-  filter(
-    !stri_detect_regex(unidad, "acciones|\\.\\.\\.", case_insensitive=TRUE) |
-      stri_detect_regex(unidad, "con|proyectos", case_insensitive=TRUE)
-  ) %>%
-  # Quedándome con actividades prioritarias
-  filter(tema %in% temas_prioritarios |
-           id_actividad %in% c(93, 108, 63) | #infraestructura y señalética
-           stri_detect_regex(actividad,
-                             "capacitación de productor|uso sustentable|visitante|uso público",
-                             case_insensitive=TRUE) # aprovechamiento sustentable consuntivo y no consuntivo)
-  ) %>%
-  group_by(actividad, unidad) %>%
-    summarise(
-      id_actividad = first(id_actividad),
-      tema = first(tema),
-      num_anps = n()
     ) %>%
   ungroup() %>%
-  arrange(tema, actividad, desc(num_anps))
-
-# Obtuve las actividades prioritarias seleccionando de cada tema las 2 que fueron realizadas
-# por una mayor cantidad de ANP's.
-Actividades_prioritarias_unidades_anps_presentable <- Actividades_prioritarias_unidades_anps %>%
+  group_by(actividad, unidad) %>%
+  summarise(
+    id_actividad = first(id_actividad),
+    tema = first(tema),
+    num_anps = n()
+  ) %>%
+  select(
+    tema,
+    actividad,
+    unidad,
+    num_anps
+  ) %>%
   ddply(~tema, function(x){
     aux <- x %>%
       arrange(desc(num_anps)) %>%
       head(2)
     #print(aux)
     return(aux)
-  })
+  }) %>%
+  mutate(
+    id_actividad_unidad = 1:nrow(.)
+  ) %>%
+  select(
+    tema,
+    id_actividad_unidad,
+    actividad,
+    unidad,
+    num_anps
+  )
 
+kable(Actividades_unidades_mas_representativas)
 ```
 
+La tabla anterior fue uno de los criterios de selección de las actividades y sus
+unidades de medida que utilizamos para la propuesta que realizamos en esta consultoría,
+sin embargo, no fue la única, puesto que también tomamos en cuenta los intereses
+de directivos de la CONANP, así como la capacidad de georreferenciación de las
+variables.
 
+## Ejemplos de análisis posibles con registros comparables de cada actividad
+
+El ultimo análisis de este documento tiene como fin principal mostrar la clase
+de análisis que se pueden lograr cuando se cuentan con:
+
+* Varios registros por actividad
+* Una misma unidad de medida para todos los registros
+
+Este corresponde a **una gráfica de metas registradas y alcanzadas contra el tiempo,
+agregadas por ANP, para cada actividad.**
+
+La actividad + unidad de medida tiene un id, que corresponde a la columna
+**id_actividad_unidad** de la tabla anterior, de esta manera, se puede saber qué
+gráfica corresponde a qué actividad, y en qué unidad de medida están las metas.
 
 ```{r, echo = FALSE}
+# Gráfica de metas realizadas y alcanzadas vs tiempo para las actividades + unidades
+# de interés, agregada por ANP.
+
 # Seleccionando actividades cuyas metas son comparables y graficándolas.
 # Las principales actividades + unidades comparables entre ANP's
 # las tenemos en la tabla "Actividades_prioritarias_unidades_anps_presentable"
 # el campo de acumulativo no es muy confiable, por lo que se omitió, al menos
 # en principio.
 
-
-# Tabla con los valores de actividad + unidad que nos interesan:
-actividades_unidades_interes <- Actividades_prioritarias_unidades_anps_presentable %>%
-  select(
-    tema,
-    actividad,
-    unidad
-  ) %>%
-  mutate(
-    id_actividad_unidad = 1:nrow(.)
-  )
-
-kable(actividades_unidades_interes, style = "grid", caption = "Actividades + unidades realizadas por la mayor cantidad de ANP's", split.table = Inf)
-
-# Gráfica de metas realizadas y alcanzadas vs tiempo para las actividades + unidades
-# de interés, agregada por ANP.
-
 # tentativo: creo que se perdieron actividades porque no tenían bien registrado el año.
 Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
   filter(!is.na(anio)) %>%
-  inner_join(actividades_unidades_interes, by = c("actividad", "unidad")) %>%
+  inner_join(Actividades_unidades_mas_representativas, by = c("actividad", "unidad")) %>%
   select(
     -realizada_1,
     -realizada_2,
@@ -1187,7 +1174,7 @@ Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
     summarise(
       n = sum(valor)
     ) %>%
-  ungroup %>%
+  ungroup() %>%
   arrange(id_actividad_unidad, tipo, trimestre) %>%
   # Calculando frecuencias acumulativas
   group_by(id_actividad_unidad, tipo) %>%
@@ -1197,19 +1184,10 @@ Actividades_prioritarias_unidades_realizadas_anp <- Actividad_poa %>%
   ungroup()
 ```
 
-## Actividades con metas comparables
-
-Ahora bien, agregando por ANP's, seleccionamos actividades con metas comparables y
-**graficamos por trimestre la meta agregada (en las unidades correspondientes)
-VS la cantidad de unidades alcanzadas**.
-
 <!-- Cabe destacar que no utilizamos el campo de "acumulativo", porque nos dimos cuenta
 que su información no es muy confiable, al comparar con lo que sabemos de las
 juntas, para las 4 ANP's de interés. 
-#eoma: Esto ¿por que?
 -->
-
-### Por Trimestre
 
 ```{r echo=FALSE, fig.height=11, fig.width=10}
 # graficando el número de unidades alcanzadas por actividad por trimestre.
@@ -1225,10 +1203,13 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
     axis.title.y = element_blank(),
     #axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
-    plot.title = element_text(hjust = 0.5, face="bold"))
-```
+    plot.title = element_text(hjust = 0.5, face="bold")
+    ) +
+  # de scales, para que no utilice notación científica
+  scale_y_continuous(labels = comma) +
+  ggtitle("Metas trimestrales no acumulativas por id de actividad + unidad")
 
-### Acumulado
+```
 
 ```{r, echo=FALSE, fig.height=11, fig.width=10}
 # y acumulativo:
@@ -1245,5 +1226,65 @@ ggplot(data = Actividades_prioritarias_unidades_realizadas_anp,
     #axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
     plot.title = element_text(hjust = 0.5, face="bold")
-    )
+    ) +
+  # de scales, para que no utilice notación científica
+  scale_y_continuous(labels = comma) +
+  ggtitle("Metas trimestrales acumulativas por id de actividad + unidad")
 ```
+
+Como ejemplo para interpretar las gráficas anteriores, tomemos la gráfica 21,
+que (observando la tabla) corresponde a la actividad
+**"Elaborar y ejecutar programas de inspección y vigilancia en las ANP y sus zonas de influencia, para detectar y/o prevenir ilícitos ambientales"**
+con unidad de medida
+**"Hectáreas supervisadas mediante actividades de vigilancia"**
+
+Se puede ver que esta actividad sólo se realizó en el 2016, y que en los primeros
+3 trimestres, la cantidad de hectáreas supervisadas no llegó a la meta. En el
+cuarto la superó con creces, sin embargo, al estudiar la gráfica acumulativa,
+vemos que esto no alcanzó a compensar el déficit de los primeros 3 trimestres.
+
+Finalmente, cabe destacar que las gráficas anteriores se pueden realizar por ANP,
+utilizando una interfaz amigable (como un dashboard).
+
+# Conclusiones
+
+* Análisis general a nivel de proyectos:
+    + Los objetivos de **"Conservación y Manejo de la Biodiversidad"**,
+    **"Comunicación ,Educación, Cultura y participación social para la conservación"**
+    y **"Economía de la conservación"** son los más importantes, tanto por el número
+    de ANP’s que los implementan, como por el número de proyectos que tienen.
+    + No hubo un cambio radical de prioridades entre el 2015 y el 2016.
+    + En general, se redujeron la cantidad de ANP's y proyectos implementados para
+    cada objetivo y tema en el 2016 con respecto al 2015.
+    + Los objetivos con menor importancia en cantidad de proyectos / ANP's, cuentan
+    con pocos temas, pero que son de marcado interés (medido por la cantidad de
+    proyectos y ANP's que los implementan).
+  
+* Análisis general a nivel de actividades:
+    + El 75% de las combinaciones de actividad + unidad de medida tiene menos de
+    30 datos, sin embargo, el 25% de las actividades restantes concentra casi el
+    70% de los datos.
+    + Conclusiones de este tipo se pueden obtener al estudiar la gráfica de
+    "**% de registros y actividades + unidades en la base que satisfacen un requerimiento mínimo de comparabilidad**"
+    + El número de registros de determinada actividad + unidad de medida en cierto
+    año es prácticamente el número de ANP’s que la implementaron en dicho año, por
+    lo que mayor cantidad de registros en un año se traduce en mayor cantidad de
+    ANP's que implementan cierta actividad de esta manera.
+    
+* Análisis específico a nivel de actividades prioritarias:
+    + En promedio, si las unidades fueran estandarizadas, se tendrían casi 60
+    registros comparables más por actividad.
+    + En promedio, si las unidades fueran estandarizadas, se podrían comparar más
+    de 13 ANPs y direcciones regionales adicionales por actividad.
+    + La discrepancia de este resultado con el último de la sección anterior
+    posiblemente se debe a que:
+        + Se están considerando dos años, no sólo uno, y varias ANP's pueden realizar
+        la actividad dos veces en ese lapso.
+        + Varias ANP's registran la misma actividad, en el mismo año y con distintas
+        unidades de medida, por lo que al estandarizar unidades no se obtendrían
+        nuevas ANP's.
+    + Al tener para cada actividad registros estandarizados en unidades de medida,
+    se pueden acumular mayor cantidad de registros comparables, que pueden dar lugar
+    a poderosos análisis.
+    
+    
